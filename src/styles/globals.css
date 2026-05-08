@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-white text-slate-900;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism — refined, subtle */
+  .glass {
+    @apply rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Focus ring — sky blue */
+  .focus-ring {
+    @apply outline-none ring-2 ring-sky-500/40 ring-offset-2;
+  }
+
+  /* Premium card shadow */
+  .card-shadow {
+    @apply shadow-[0_1px_3px_rgba(0, 0, 0, 0.06), 0_4px_16px_rgba(0, 0, 0, 0.04)];
+  }
+
+  /* Hover lift */
+  .hover-lift {
+    @apply transition-smooth hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0, 0, 0, 0.08)];
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 hover:border-slate-300 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20;
+  }
+
+  /* Select base */
+  .select-base {
+    @apply input-base cursor-pointer appearance-none;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.97);
+      opacity: 0;
+    }
+
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.25s ease-out;
+  }
+
+  /* ── Marquee ─────────────────────────────────────────────── */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 32s linear infinite;
+    will-change: transform;
+  }
+
+  /* Pause on hover — applied to the track wrapper */
+  .marquee-root:hover .animate-marquee {
+    animation-play-state: paused;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
