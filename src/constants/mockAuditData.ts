@@ -28,100 +28,39 @@
 
 import type {
     AuditResult,
-    ToolRecommendation,
-    OpportunityInsight,
     AISummary,
 } from '@/types/audit';
 import { computeAuditSummary } from '@/services/audit/computeAuditSummary';
+import { generateRecommendations } from '@/services/audit/rules/engine';
+import { buildToolInputs } from '@/services/audit/buildToolInputs';
 
-// ─── Tool recommendations ─────────────────────────────────────────────────────
-// Ordered by priority (1 = highest impact). monthlySaving drives priority.
-// ChatGPT: 90  →  priority 1
-// Claude:  102 →  wait, Claude saving is higher — but confidence is Low,
-//                 so it ranks second to reflect risk-adjusted priority.
-// Cursor:  60  →  priority 3
+// ─── Mock tool inputs ─────────────────────────────────────────────────────────
+// These represent what a user would submit via the audit form.
+// Changing these values will cascade through the engine, calculators,
+// and score — no other files need to be updated.
 
-const recommendations: ToolRecommendation[] = [
-    {
-        toolId: 'chatgpt',
-        toolName: 'ChatGPT',
-        category: 'llm',
-        currentPlan: 'Team',
-        currentMonthlyCost: 150,
-        recommendedPlan: 'Plus',
-        recommendedMonthlyCost: 60,
-        monthlySaving: 90,
-        annualSaving: 1080,
-        reasoning:
-            'For a team of this size primarily using ChatGPT for code review and documentation, Team collaboration features appear underutilised. Individual Plus plans would cover the same workflows at a fraction of the cost.',
-        confidence: 'high',
-        confidenceColor: 'teal',
-        priority: 1,
+const MOCK_TOOL_INPUTS = buildToolInputs({
+    selectedTools: ['chatgpt', 'claude', 'cursor'],
+    toolConfigs: {
+        chatgpt: { plan: 'team', monthlySpend: 150, seats: 5 },
+        claude: { plan: 'pro', monthlySpend: 102, seats: 5 },
+        cursor: { plan: 'business', monthlySpend: 160, seats: 4 },
     },
-    {
-        toolId: 'claude',
-        toolName: 'Claude',
-        category: 'llm',
-        currentPlan: 'Pro',
-        currentMonthlyCost: 102,
-        recommendedPlan: 'Free',
-        recommendedMonthlyCost: 0,
-        monthlySaving: 102,
-        annualSaving: 1224,
-        reasoning:
-            'Usage signals suggest Claude is accessed infrequently — likely as a secondary model. Downgrading to the free tier and reserving Pro access for power users could eliminate this line item entirely.',
-        confidence: 'low',
-        confidenceColor: 'amber',
-        priority: 2,
-    },
-    {
-        toolId: 'cursor',
-        toolName: 'Cursor',
-        category: 'code',
-        currentPlan: 'Business',
-        currentMonthlyCost: 160,
-        recommendedPlan: 'Pro',
-        recommendedMonthlyCost: 100,
-        monthlySaving: 60,
-        annualSaving: 720,
-        reasoning:
-            'Business tier unlocks admin controls and SSO — features typically needed at 50+ seats. Consolidating to Pro retains full AI capabilities while eliminating overhead you are unlikely to use at your current scale.',
-        confidence: 'medium',
-        confidenceColor: 'sky',
-        priority: 3,
-    },
-];
+});
 
-// ─── Opportunity insights ─────────────────────────────────────────────────────
-// Short, factual, scannable. No hyperbole.
-// iconName maps to a Lucide icon resolved in the UI layer.
+const MOCK_TEAM_SIZE = '6-20';
+const MOCK_USE_CASE = 'coding';
 
-const insights: OpportunityInsight[] = [
-    {
-        id: 'insight-overlapping',
-        label: '3 overlapping subscriptions detected',
-        iconName: 'Layers',
-        color: 'amber',
-    },
-    {
-        id: 'insight-annual-savings',
-        label: 'Potential annual savings exceed $1,500',
-        iconName: 'TrendingDown',
-        color: 'teal',
-    },
-    {
-        id: 'insight-enterprise',
-        label: 'Enterprise features may be underutilised',
-        iconName: 'AlertCircle',
-        color: 'sky',
-    },
-    {
-        id: 'insight-timeline',
-        label: 'Stack optimisation possible within 48 hours',
-        iconName: 'Zap',
-        color: 'slate',
-    },
-];
+// ─── Engine-generated recommendations + insights ──────────────────────────────
+// recommendations and insights are now produced by the rules engine.
+// The engine evaluates each tool against the rule set and returns
+// typed ToolRecommendation[] and OpportunityInsight[].
+
+const { recommendations, insights } = generateRecommendations({
+    tools: MOCK_TOOL_INPUTS,
+    teamSize: MOCK_TEAM_SIZE,
+    useCase: MOCK_USE_CASE,
+});
 
 // ─── AI summary ───────────────────────────────────────────────────────────────
 // Paragraphs stored as an array — no string splitting in the UI.

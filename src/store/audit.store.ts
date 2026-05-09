@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { AuditResult } from '@/types';
+import type { AuditResult } from '@/types/audit';
 
 /**
  * Audit Store
@@ -136,6 +136,7 @@ export const useAuditStore = create<AuditState>()(
                     useCase: state.useCase,
                     selectedTools: state.selectedTools,
                     toolConfigs: state.toolConfigs,
+                    auditResults: state.auditResults,
                     previousAudits: state.previousAudits,
                 }),
             }
