@@ -8,7 +8,8 @@ interface GradientButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
 }
 
 /**
- * GradientButton — premium sky-blue CTA button
+ * GradientButton — primary CTA button
+ * Consistent sizing, focus ring, active state, disabled state.
  */
 export function GradientButton({
     children,
@@ -19,14 +20,21 @@ export function GradientButton({
     ...props
 }: GradientButtonProps) {
     const sizeClasses = {
-        sm: 'h-8 px-4 text-xs gap-1.5',
-        md: 'h-10 px-5 text-sm gap-2',
-        lg: 'h-11 px-7 text-sm gap-2',
+        sm: 'h-8  px-4  text-xs  gap-1.5',
+        md: 'h-10 px-5  text-sm  gap-2',
+        lg: 'h-11 px-7  text-sm  gap-2',
     };
 
     const variantClasses = {
-        primary: 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white hover:from-sky-600 hover:to-cyan-600 shadow-[0_2px_8px_rgba(14,165,233,0.3)]',
-        secondary: 'bg-slate-900 text-white hover:bg-slate-700',
+        primary:
+            'bg-gradient-to-r from-sky-500 to-cyan-500 text-white ' +
+            'hover:from-sky-600 hover:to-cyan-600 ' +
+            'active:from-sky-700 active:to-cyan-700 ' +
+            'shadow-[0_2px_8px_rgba(14,165,233,0.25)]',
+        secondary:
+            'bg-slate-900 text-white ' +
+            'hover:bg-slate-800 ' +
+            'active:bg-slate-950',
     };
 
     return (

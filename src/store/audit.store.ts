@@ -1,14 +1,23 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type { AuditResult } from '@/types/audit';
+import { computeMonthlySpend, isVariablePricing } from '@/services/audit/pricingCatalog';
 
 /**
  * Audit Store
- * Manages global state for audit form data and results
- * Persists data to localStorage for session continuity
+ *
+ * Key design: toolConfigs.monthlySpend is ALWAYS derived from
+ * (planPrice × seats) via the pricing catalog. It is never set
+ * independently unless the plan uses variable pricing (API tools).
+ *
+ * This ensures the form, review step, and results page all show
+ * the same number — there is no manual spend field to drift.
  */
 
 interface AuditState {
+    // Hydration flag — true once Zustand has rehydrated from localStorage
+    _hasHydrated: boolean;
+
     // Form State
     currentStep: number;
     teamSize: string;
@@ -44,6 +53,7 @@ interface AuditState {
     setAuditResults: (results: AuditResult) => void;
     addToPreviousAudits: (audit: AuditResult) => void;
     resetForm: () => void;
+    setHasHydrated: (v: boolean) => void;
 }
 
 export const useAuditStore = create<AuditState>()(
@@ -51,6 +61,7 @@ export const useAuditStore = create<AuditState>()(
         persist(
             (set) => ({
                 // Initial state
+                _hasHydrated: false,
                 currentStep: 0,
                 teamSize: '',
                 useCase: '',
@@ -69,22 +80,25 @@ export const useAuditStore = create<AuditState>()(
                 setUseCase: (useCase) => set({ useCase }),
 
                 toggleTool: (toolId) =>
-                    set((state) => ({
-                        selectedTools: state.selectedTools.includes(toolId)
-                            ? state.selectedTools.filter((id) => id !== toolId)
-                            : [...state.selectedTools, toolId],
-                        // Initialize config if adding tool
-                        toolConfigs: state.selectedTools.includes(toolId)
-                            ? state.toolConfigs
-                            : {
+                    set((state) => {
+                        if (state.selectedTools.includes(toolId)) {
+                            // Deselecting — remove from list and configs
+                            return {
+                                selectedTools: state.selectedTools.filter((id) => id !== toolId),
+                                toolConfigs: Object.fromEntries(
+                                    Object.entries(state.toolConfigs).filter(([k]) => k !== toolId)
+                                ),
+                            };
+                        }
+                        // Selecting — initialize with empty plan, spend auto-syncs on plan select
+                        return {
+                            selectedTools: [...state.selectedTools, toolId],
+                            toolConfigs: {
                                 ...state.toolConfigs,
-                                [toolId]: {
-                                    plan: '',
-                                    monthlySpend: 0,
-                                    seats: 1,
-                                },
+                                [toolId]: { plan: '', monthlySpend: 0, seats: 1 },
                             },
-                    })),
+                        };
+                    }),
 
                 removeTool: (toolId) =>
                     set((state) => {
@@ -97,15 +111,29 @@ export const useAuditStore = create<AuditState>()(
                     }),
 
                 updateToolConfig: (toolId, config) =>
-                    set((state) => ({
-                        toolConfigs: {
-                            ...state.toolConfigs,
-                            [toolId]: {
-                                ...state.toolConfigs[toolId],
-                                ...config,
+                    set((state) => {
+                        const current = state.toolConfigs[toolId] ?? { plan: '', monthlySpend: 0, seats: 1 };
+                        const nextPlan = config.plan ?? current.plan;
+                        const nextSeats = config.seats ?? current.seats;
+
+                        // Auto-derive spend from catalog whenever plan or seats change.
+                        // Only override if the plan has fixed pricing.
+                        // Variable pricing (API tools) keeps whatever the user entered.
+                        let nextSpend = config.monthlySpend ?? current.monthlySpend;
+                        if (config.plan !== undefined || config.seats !== undefined) {
+                            const derived = computeMonthlySpend(toolId, nextPlan, nextSeats);
+                            if (derived !== null && !isVariablePricing(toolId, nextPlan)) {
+                                nextSpend = derived;
+                            }
+                        }
+
+                        return {
+                            toolConfigs: {
+                                ...state.toolConfigs,
+                                [toolId]: { plan: nextPlan, monthlySpend: nextSpend, seats: nextSeats },
                             },
-                        },
-                    })),
+                        };
+                    }),
 
                 setLoading: (loading) => set({ isLoading: loading }),
 
@@ -127,6 +155,8 @@ export const useAuditStore = create<AuditState>()(
                         toolConfigs: {},
                         error: null,
                     }),
+
+                setHasHydrated: (v) => set({ _hasHydrated: v }),
             }),
             {
                 name: 'audit-store',
@@ -139,6 +169,12 @@ export const useAuditStore = create<AuditState>()(
                     auditResults: state.auditResults,
                     previousAudits: state.previousAudits,
                 }),
+                onRehydrateStorage: () => (state) => {
+                    // Called once localStorage has been read and merged into the store.
+                    // Setting _hasHydrated triggers a re-render in components that
+                    // depend on it, so they can now safely read auditResults.
+                    state?.setHasHydrated(true);
+                },
             }
         )
     )

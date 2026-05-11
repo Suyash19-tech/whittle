@@ -1,17 +1,31 @@
 import type { ToolRecommendation } from '@/types/audit';
+import type { ToolInput } from '../rules/types';
 
 // ─── I/O types ────────────────────────────────────────────────────────────────
 
-/** Input: the raw list of tool recommendations from the audit form */
+/**
+ * SpendInput accepts BOTH the raw tool inputs AND the recommendations.
+ *
+ * Why both?
+ * - currentMonthlySpend must sum ALL selected tools (including those with no
+ *   recommendation — e.g. a tool already on the optimal plan).
+ * - optimizedMonthlySpend sums recommended costs for tools that have a
+ *   recommendation, and the original cost for tools that don't (no change).
+ *
+ * Previous bug: only recommendations were used, so tools without a matching
+ * rule were silently dropped from totals, causing understated spend figures.
+ */
 export interface SpendInput {
+    /** All tools the user configured — the canonical source of current spend */
+    toolInputs: ToolInput[];
+    /** Engine output — only tools with an actionable recommendation appear here */
     recommendations: ToolRecommendation[];
 }
 
-/** Output: all derived spend figures, rounded to the nearest dollar */
 export interface SpendResult {
-    /** Sum of currentMonthlyCost across all tools */
+    /** Sum of monthlySpend across ALL configured tools */
     currentMonthlySpend: number;
-    /** Sum of recommendedMonthlyCost across all tools */
+    /** Optimized spend: recommended cost where available, original cost otherwise */
     optimizedMonthlySpend: number;
     /** currentMonthlySpend - optimizedMonthlySpend */
     monthlySavings: number;
@@ -23,10 +37,7 @@ export interface SpendResult {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Round a float to the nearest integer dollar */
 const dollars = (n: number): number => Math.round(n);
-
-/** Clamp a value between min and max (inclusive) */
 const clamp = (n: number, min: number, max: number): number =>
     Math.min(Math.max(n, min), max);
 
@@ -35,15 +46,17 @@ const clamp = (n: number, min: number, max: number): number =>
 /**
  * calculateSpend
  *
- * Derives all spend totals from a list of tool recommendations.
- * Pure function — deterministic, no side effects, no external dependencies.
+ * Derives all spend totals from the full tool list and recommendations.
+ * Pure function — deterministic, no side effects.
  *
- * @example
- *   const result = calculateSpend({ recommendations });
- *   // { currentMonthlySpend: 412, optimizedMonthlySpend: 285, ... }
+ * Algorithm:
+ *   currentMonthlySpend  = sum of toolInputs[*].monthlySpend
+ *   optimizedMonthlySpend = for each tool:
+ *     - if a recommendation exists → use recommendedMonthlyCost
+ *     - otherwise                  → use original monthlySpend (no change)
  */
-export function calculateSpend({ recommendations }: SpendInput): SpendResult {
-    if (recommendations.length === 0) {
+export function calculateSpend({ toolInputs, recommendations }: SpendInput): SpendResult {
+    if (toolInputs.length === 0) {
         return {
             currentMonthlySpend: 0,
             optimizedMonthlySpend: 0,
@@ -53,21 +66,26 @@ export function calculateSpend({ recommendations }: SpendInput): SpendResult {
         };
     }
 
+    // Build a lookup map for fast recommendation access
+    const recByToolId = new Map(recommendations.map((r) => [r.toolId, r]));
+
     const currentMonthlySpend = dollars(
-        recommendations.reduce((sum, r) => sum + r.currentMonthlyCost, 0)
+        toolInputs.reduce((sum, t) => sum + t.monthlySpend, 0)
     );
 
     const optimizedMonthlySpend = dollars(
-        recommendations.reduce((sum, r) => sum + r.recommendedMonthlyCost, 0)
+        toolInputs.reduce((sum, t) => {
+            const rec = recByToolId.get(t.toolId);
+            // If a recommendation exists, use its projected cost; otherwise no change
+            return sum + (rec ? rec.recommendedMonthlyCost : t.monthlySpend);
+        }, 0)
     );
 
     const monthlySavings = dollars(currentMonthlySpend - optimizedMonthlySpend);
     const annualSavings = dollars(monthlySavings * 12);
-
-    const savingsPercentage =
-        currentMonthlySpend > 0
-            ? Math.round((monthlySavings / currentMonthlySpend) * 100)
-            : 0;
+    const savingsPercentage = currentMonthlySpend > 0
+        ? Math.round((monthlySavings / currentMonthlySpend) * 100)
+        : 0;
 
     return {
         currentMonthlySpend,

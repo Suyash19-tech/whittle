@@ -11,43 +11,75 @@
     @apply bg-white text-slate-900;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
+
+  /* Consistent heading scale */
+  h1 {
+    @apply tracking-tight;
+  }
+
+  h2 {
+    @apply tracking-tight;
+  }
 }
 
 @layer components {
 
-  /* Glassmorphism — refined, subtle */
+  /* ── Glassmorphism — one consistent level ─────────────────── */
   .glass {
-    @apply rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl;
+    @apply rounded-2xl border border-slate-200/70 bg-white/75 backdrop-blur-md shadow-[0_1px_3px_rgba(0, 0, 0, 0.06), 0_4px_16px_rgba(0, 0, 0, 0.04)];
   }
 
-  /* Smooth transitions */
+  /* ── Transitions — two speeds only ───────────────────────── */
+  /* micro: hover, focus, active */
+  .transition-micro {
+    @apply transition-all duration-150 ease-out;
+  }
+
+  /* standard: card lifts, overlays */
   .transition-smooth {
     @apply transition-all duration-200 ease-out;
   }
 
-  /* Focus ring — sky blue */
+  /* ── Focus ring — unified ─────────────────────────────────── */
   .focus-ring {
     @apply outline-none ring-2 ring-sky-500/40 ring-offset-2;
   }
 
-  /* Premium card shadow */
-  .card-shadow {
+  /* ── Shadow scale — 3 levels ──────────────────────────────── */
+  .shadow-card {
     @apply shadow-[0_1px_3px_rgba(0, 0, 0, 0.06), 0_4px_16px_rgba(0, 0, 0, 0.04)];
   }
 
-  /* Hover lift */
+  .shadow-raised {
+    @apply shadow-[0_4px_20px_rgba(0, 0, 0, 0.08)];
+  }
+
+  .shadow-hero {
+    @apply shadow-[0_8px_40px_rgba(0, 0, 0, 0.06)];
+  }
+
+  /* ── Hover lift — unified ─────────────────────────────────── */
   .hover-lift {
     @apply transition-smooth hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0, 0, 0, 0.08)];
   }
 
-  /* Input base */
+  /* ── Input base ───────────────────────────────────────────── */
   .input-base {
-    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 hover:border-slate-300 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-micro hover:border-slate-300 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20;
   }
 
-  /* Select base */
   .select-base {
     @apply input-base cursor-pointer appearance-none;
+  }
+
+  /* ── Section label — unified ──────────────────────────────── */
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400;
+  }
+
+  /* ── Disabled state ───────────────────────────────────────── */
+  .disabled-state {
+    @apply cursor-not-allowed opacity-50 pointer-events-none;
   }
 }
 
@@ -86,19 +118,6 @@
     }
   }
 
-  .animate-fade-in {
-    animation: fadeIn 0.4s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.4s ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.25s ease-out;
-  }
-
-  /* ── Marquee ─────────────────────────────────────────────── */
   @keyframes marquee {
     from {
       transform: translateX(0);
@@ -109,18 +128,29 @@
     }
   }
 
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out both;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out both;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.25s ease-out both;
+  }
+
   .animate-marquee {
     animation: marquee 32s linear infinite;
     will-change: transform;
   }
 
-  /* Pause on hover — applied to the track wrapper */
   .marquee-root:hover .animate-marquee {
     animation-play-state: paused;
   }
 }
 
-/* Scrollbar */
+/* ── Scrollbar ────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

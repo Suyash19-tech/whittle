@@ -86,6 +86,7 @@ const { summary, score } = computeAuditSummary({
     date: 'May 8, 2026',
     teamSize: '6–20 people',
     useCase: 'Coding & Development',
+    toolInputs: MOCK_TOOL_INPUTS,
     recommendations,
 });
 

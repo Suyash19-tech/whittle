@@ -1,108 +1,157 @@
-import type { ToolRecommendation, AuditScore, ScoreLabel, ConfidenceLevel } from '@/types/audit';
+import type { ToolRecommendation, AuditScore, ScoreLabel } from '@/types/audit';
+import type { ToolInput } from '../rules/types';
 
-// ─── I/O types ────────────────────────────────────────────────────────────────
+// ─── I/O ──────────────────────────────────────────────────────────────────────
 
 export interface ScoreInput {
     recommendations: ToolRecommendation[];
-    /** Total current monthly spend — used to compute waste ratio */
+    toolInputs: ToolInput[];
     currentMonthlySpend: number;
 }
 
-// ─── Score band table ─────────────────────────────────────────────────────────
+// ─── Score bands ──────────────────────────────────────────────────────────────
+
+const SCORE_BANDS: Array<{ min: number; label: ScoreLabel; explanation: string }> = [
+    {
+        min: 88,
+        label: 'Fully Optimized',
+        explanation:
+            'Your AI stack is lean and well-matched to your team size. Spend is proportionate to capability, and there is little recoverable budget remaining.',
+    },
+    {
+        min: 72,
+        label: 'Well Optimized',
+        explanation:
+            'Your stack is in good shape with minor inefficiencies. A small number of targeted changes would close the gap without disrupting workflows.',
+    },
+    {
+        min: 52,
+        label: 'Moderately Optimized',
+        explanation:
+            'Your stack is functional but carries some redundant spend. A few targeted changes could meaningfully reduce costs without impacting productivity.',
+    },
+    {
+        min: 35,
+        label: 'Below Average',
+        explanation:
+            'Several tools appear over-provisioned for your current scale. Addressing the highest-impact recommendations would recover meaningful budget.',
+    },
+    {
+        min: 0,
+        label: 'Needs Attention',
+        explanation:
+            'Your AI spend has significant structural inefficiencies. Immediate action on the top recommendations would produce substantial savings.',
+    },
+];
+
+// ─── Weighted factor system ───────────────────────────────────────────────────
 
 /**
- * Score bands with label and explanation template.
- * Bands are checked from highest to lowest — first match wins.
+ * Scoring factors — each contributes a positive or negative delta.
  *
- * Future: swap explanation for a dynamic template that references
- * specific tools or savings amounts.
- */
-const SCORE_BANDS: Array<{
-    min: number;
-    label: ScoreLabel;
-    explanation: string;
-}> = [
-        {
-            min: 90,
-            label: 'Fully Optimized',
-            explanation:
-                'Your AI stack is lean and well-matched to your team size. There is little recoverable spend remaining.',
-        },
-        {
-            min: 75,
-            label: 'Well Optimized',
-            explanation:
-                'Your stack is in good shape with minor inefficiencies. A small number of targeted changes would close the gap.',
-        },
-        {
-            min: 55,
-            label: 'Moderately Optimized',
-            explanation:
-                'Your stack is functional but carries redundant spend. A few targeted changes could meaningfully reduce costs without impacting productivity.',
-        },
-        {
-            min: 40,
-            label: 'Below Average',
-            explanation:
-                'Several tools are over-provisioned for your current scale. Addressing the highest-impact recommendations would recover meaningful budget.',
-        },
-        {
-            min: 0,
-            label: 'Needs Attention',
-            explanation:
-                'Your AI spend has significant structural inefficiencies. Immediate action on the top recommendations would produce substantial savings.',
-        },
-    ];
-
-// ─── Penalty weights ──────────────────────────────────────────────────────────
-
-/**
- * Each penalty reduces the base score of 100.
- * Weights are intentionally small and additive — the score degrades
- * gradually rather than collapsing on a single signal.
+ * Base score: 100. Penalties reduce it. Bonuses can partially offset.
+ * Final score is clamped to [0, 100].
  *
- * Penalty sources:
- *   wasteRatio      — proportion of spend that is recoverable
- *   highConfidence  — each high-confidence recommendation is a clear inefficiency
- *   mediumConfidence — medium-confidence recommendations are probable inefficiencies
- *   lowConfidence   — low-confidence recommendations are possible inefficiencies
- *   duplicateCategory — multiple tools in the same category suggest overlap
+ * Factor design principles:
+ * - Waste ratio is the dominant signal (up to -55 pts)
+ * - Confidence-weighted recommendations add nuance
+ * - API-heavy stacks are penalised less aggressively (API spend is often justified)
+ * - Capability overlap (same-purpose tools) penalises more than provider diversity
+ * - Enterprise overkill at small scale is a clear inefficiency
+ * - Seat inefficiency (high-tier plan, very few seats) adds a small penalty
  */
-const WEIGHTS = {
-    wasteRatioMultiplier: 60,   // up to 60 pts from waste ratio alone
-    highConfidence: 8,           // per high-confidence recommendation
-    mediumConfidence: 4,         // per medium-confidence recommendation
-    lowConfidence: 2,            // per low-confidence recommendation
-    duplicateCategory: 5,        // per category with more than one tool
+const FACTORS = {
+    // Waste ratio: recoverable spend / total spend, scaled to max -55 pts
+    wasteRatioMax: 55,
+
+    // Per recommendation by confidence
+    highConfidenceRec: 10,
+    mediumConfidenceRec: 5,
+    lowConfidenceRec: 2,
+
+    // Capability overlap (same-purpose tools, e.g. Cursor + Copilot)
+    capabilityOverlap: 8,
+
+    // Provider overlap (same provider, different products, e.g. ChatGPT + OpenAI API)
+    providerOverlap: 3,
+
+    // Enterprise plan on a small team (< 10 seats)
+    enterpriseOverkill: 7,
+
+    // API spend concentration penalty (applied at thresholds)
+    apiConcentrationMedium: 3,   // 50–70% of spend is API
+    apiConcentrationHigh: 6,   // 70–85%
+    apiConcentrationCritical: 10, // 85%+
+
+    // Seat inefficiency: high-tier plan with ≤ 2 seats
+    seatInefficiency: 4,
+
+    // Stack complexity: more than 4 paid tools
+    stackComplexity: 3,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Count recommendations by confidence level */
-function countByConfidence(
-    recs: ToolRecommendation[],
-    level: ConfidenceLevel
-): number {
-    return recs.filter((r) => r.confidence === level).length;
+// Tools that are considered the same capability (high overlap)
+const CAPABILITY_GROUPS: string[][] = [
+    ['cursor', 'github-copilot', 'windsurf'],   // AI code editors
+    ['chatgpt', 'claude', 'gemini'],             // General LLMs (low overlap — different strengths)
+];
+
+// Provider groupings for provider-overlap detection
+const PROVIDER_GROUPS: Record<string, string> = {
+    'chatgpt': 'openai',
+    'openai-api': 'openai',
+    'claude': 'anthropic',
+    'anthropic-api': 'anthropic',
+    'gemini': 'google',
+    'cursor': 'cursor',
+    'github-copilot': 'github',
+    'windsurf': 'codeium',
+};
+
+function countCapabilityOverlap(tools: ToolInput[]): number {
+    let overlaps = 0;
+    for (const group of CAPABILITY_GROUPS) {
+        const inGroup = tools.filter((t) => group.includes(t.toolId));
+        // Code editors: 2+ is high overlap. LLMs: 3+ is overlap (2 is fine).
+        const threshold = group.includes('cursor') ? 2 : 3;
+        if (inGroup.length >= threshold) overlaps++;
+    }
+    return overlaps;
 }
 
-/**
- * Count categories that appear more than once across recommendations.
- * A category appearing twice means two tools overlap in purpose.
- */
-function countDuplicateCategories(recs: ToolRecommendation[]): number {
-    const counts = recs.reduce<Record<string, number>>((acc, r) => {
-        acc[r.category] = (acc[r.category] ?? 0) + 1;
-        return acc;
-    }, {});
-    return Object.values(counts).filter((n) => n > 1).length;
+function countProviderOverlap(tools: ToolInput[]): number {
+    const providerCounts: Record<string, number> = {};
+    tools.forEach((t) => {
+        const p = PROVIDER_GROUPS[t.toolId];
+        if (p) providerCounts[p] = (providerCounts[p] ?? 0) + 1;
+    });
+    return Object.values(providerCounts).filter((n) => n > 1).length;
 }
 
-/** Map a numeric score to the first matching band */
-function getBand(score: number): (typeof SCORE_BANDS)[number] {
-    return (
-        SCORE_BANDS.find((band) => score >= band.min) ?? SCORE_BANDS[SCORE_BANDS.length - 1]
+function apiSpendRatio(tools: ToolInput[]): number {
+    const total = tools.reduce((s, t) => s + t.monthlySpend, 0);
+    if (total === 0) return 0;
+    const apiSpend = tools
+        .filter((t) => t.category === 'api')
+        .reduce((s, t) => s + t.monthlySpend, 0);
+    return apiSpend / total;
+}
+
+function hasEnterpriseOverkill(tools: ToolInput[]): boolean {
+    return tools.some((t) => t.planId === 'enterprise' && t.seats < 10);
+}
+
+function hasSeatInefficiency(tools: ToolInput[]): boolean {
+    // High-tier plan (not free/payg) with only 1–2 seats
+    return tools.some(
+        (t) => !['free', 'payg'].includes(t.planId) && t.seats <= 2
     );
+}
+
+function getBand(score: number): (typeof SCORE_BANDS)[number] {
+    return SCORE_BANDS.find((b) => score >= b.min) ?? SCORE_BANDS[SCORE_BANDS.length - 1];
 }
 
 // ─── Calculator ───────────────────────────────────────────────────────────────
@@ -110,39 +159,60 @@ function getBand(score: number): (typeof SCORE_BANDS)[number] {
 /**
  * calculateScore
  *
- * Produces a 0–100 optimization score from recommendation data.
- * Starts at 100 and subtracts penalties for:
- *   - Waste ratio (how much of current spend is recoverable)
- *   - High/medium/low confidence recommendations
- *   - Duplicate tool categories (overlap signal)
+ * Weighted intelligence scoring system.
+ * Starts at 100 and applies factor-based penalties.
  *
- * Pure function — deterministic, no side effects.
- *
- * @example
- *   const score = calculateScore({ recommendations, currentMonthlySpend: 412 });
- *   // { value: 72, label: 'Moderately Optimized', explanation: '...' }
+ * Key improvements over the previous version:
+ * - API-heavy stacks are not penalised as aggressively (API spend is often justified)
+ * - Capability overlap (same-purpose tools) penalises more than provider diversity
+ * - Enterprise overkill at small scale is a clear inefficiency signal
+ * - Seat inefficiency adds a small but real penalty
+ * - Stack complexity (too many paid tools) adds a minor penalty
+ * - Score bands are tighter — 90+ is genuinely hard to achieve
  */
-export function calculateScore({ recommendations, currentMonthlySpend }: ScoreInput): AuditScore {
-    if (recommendations.length === 0 || currentMonthlySpend === 0) {
-        const band = getBand(100);
-        return { value: 100, label: band.label, explanation: band.explanation };
+export function calculateScore({ recommendations, toolInputs, currentMonthlySpend }: ScoreInput): AuditScore {
+    if (toolInputs.length === 0 || currentMonthlySpend === 0) {
+        const band = getBand(82); // No data → "Well Optimized" by default, not perfect
+        return { value: 82, label: band.label, explanation: band.explanation };
     }
 
-    // Waste ratio: what fraction of current spend is recoverable
-    const totalSavings = recommendations.reduce((sum, r) => sum + r.monthlySaving, 0);
-    const wasteRatio = Math.min(totalSavings / currentMonthlySpend, 1);
-
-    // Accumulate penalties
     let penalty = 0;
-    penalty += wasteRatio * WEIGHTS.wasteRatioMultiplier;
-    penalty += countByConfidence(recommendations, 'high') * WEIGHTS.highConfidence;
-    penalty += countByConfidence(recommendations, 'medium') * WEIGHTS.mediumConfidence;
-    penalty += countByConfidence(recommendations, 'low') * WEIGHTS.lowConfidence;
-    penalty += countDuplicateCategories(recommendations) * WEIGHTS.duplicateCategory;
 
-    const raw = 100 - penalty;
-    const value = Math.round(Math.min(Math.max(raw, 0), 100));
+    // 1. Waste ratio — dominant signal
+    const totalSavings = recommendations.reduce((s, r) => s + r.monthlySaving, 0);
+    const wasteRatio = Math.min(totalSavings / currentMonthlySpend, 1);
+    penalty += wasteRatio * FACTORS.wasteRatioMax;
 
+    // 2. Confidence-weighted recommendations
+    recommendations.forEach((r) => {
+        if (r.confidence === 'high') penalty += FACTORS.highConfidenceRec;
+        if (r.confidence === 'medium') penalty += FACTORS.mediumConfidenceRec;
+        if (r.confidence === 'low') penalty += FACTORS.lowConfidenceRec;
+    });
+
+    // 3. Capability overlap (same-purpose tools)
+    penalty += countCapabilityOverlap(toolInputs) * FACTORS.capabilityOverlap;
+
+    // 4. Provider overlap (same provider, multiple products)
+    penalty += countProviderOverlap(toolInputs) * FACTORS.providerOverlap;
+
+    // 5. API spend concentration
+    const apiRatio = apiSpendRatio(toolInputs);
+    if (apiRatio >= 0.85) penalty += FACTORS.apiConcentrationCritical;
+    else if (apiRatio >= 0.70) penalty += FACTORS.apiConcentrationHigh;
+    else if (apiRatio >= 0.50) penalty += FACTORS.apiConcentrationMedium;
+
+    // 6. Enterprise overkill
+    if (hasEnterpriseOverkill(toolInputs)) penalty += FACTORS.enterpriseOverkill;
+
+    // 7. Seat inefficiency
+    if (hasSeatInefficiency(toolInputs)) penalty += FACTORS.seatInefficiency;
+
+    // 8. Stack complexity
+    const paidTools = toolInputs.filter((t) => !['free', 'payg'].includes(t.planId));
+    if (paidTools.length > 4) penalty += FACTORS.stackComplexity;
+
+    const value = Math.round(Math.min(Math.max(100 - penalty, 0), 100));
     const band = getBand(value);
     return { value, label: band.label, explanation: band.explanation };
 }

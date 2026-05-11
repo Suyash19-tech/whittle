@@ -1,101 +1,32 @@
 /**
  * Application constants
  * Centralized configuration for tools, pricing, and use cases
+ *
+ * IMPORTANT: Plan prices shown in the UI come from PRICING_CATALOG in
+ * src/services/audit/pricingCatalog.ts — that is the single source of truth.
+ * The `plans` array here is used only for the dropdown display in the form.
  */
+import { PRICING_CATALOG } from '@/services/audit/pricingCatalog';
+
+// Helper: build plan list for a tool from the pricing catalog
+function plansFor(toolId: string) {
+    return (PRICING_CATALOG[toolId] ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.pricePerSeat ?? 'Variable' as number | string,
+    }));
+}
 
 // Supported AI Tools with pricing plans
 export const SUPPORTED_AI_TOOLS = [
-    {
-        id: 'chatgpt',
-        name: 'ChatGPT',
-        provider: 'OpenAI',
-        category: 'llm' as const,
-        icon: '🤖',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'plus', name: 'Plus', price: 20 },
-            { id: 'team', name: 'Team', price: 30 },
-            { id: 'enterprise', name: 'Enterprise', price: 'Custom' },
-        ],
-    },
-    {
-        id: 'claude',
-        name: 'Claude',
-        provider: 'Anthropic',
-        category: 'llm' as const,
-        icon: '🧠',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'pro', name: 'Pro', price: 20 },
-            { id: 'team', name: 'Team', price: 30 },
-        ],
-    },
-    {
-        id: 'cursor',
-        name: 'Cursor',
-        provider: 'Cursor',
-        category: 'code' as const,
-        icon: '💻',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'pro', name: 'Pro', price: 20 },
-            { id: 'business', name: 'Business', price: 40 },
-        ],
-    },
-    {
-        id: 'github-copilot',
-        name: 'GitHub Copilot',
-        provider: 'GitHub',
-        category: 'code' as const,
-        icon: '🐙',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'individual', name: 'Individual', price: 10 },
-            { id: 'business', name: 'Business', price: 21 },
-        ],
-    },
-    {
-        id: 'gemini',
-        name: 'Gemini',
-        provider: 'Google',
-        category: 'llm' as const,
-        icon: '✨',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'pro', name: 'Pro', price: 20 },
-        ],
-    },
-    {
-        id: 'openai-api',
-        name: 'OpenAI API',
-        provider: 'OpenAI',
-        category: 'api' as const,
-        icon: '🔌',
-        plans: [
-            { id: 'payg', name: 'Pay-as-you-go', price: 'Variable' },
-        ],
-    },
-    {
-        id: 'anthropic-api',
-        name: 'Anthropic API',
-        provider: 'Anthropic',
-        category: 'api' as const,
-        icon: '🔗',
-        plans: [
-            { id: 'payg', name: 'Pay-as-you-go', price: 'Variable' },
-        ],
-    },
-    {
-        id: 'windsurf',
-        name: 'Windsurf',
-        provider: 'Codeium',
-        category: 'code' as const,
-        icon: '🌊',
-        plans: [
-            { id: 'free', name: 'Free', price: 0 },
-            { id: 'pro', name: 'Pro', price: 15 },
-        ],
-    },
+    { id: 'chatgpt', name: 'ChatGPT', provider: 'OpenAI', category: 'llm' as const, plans: plansFor('chatgpt') },
+    { id: 'claude', name: 'Claude', provider: 'Anthropic', category: 'llm' as const, plans: plansFor('claude') },
+    { id: 'cursor', name: 'Cursor', provider: 'Cursor', category: 'code' as const, plans: plansFor('cursor') },
+    { id: 'github-copilot', name: 'GitHub Copilot', provider: 'GitHub', category: 'code' as const, plans: plansFor('github-copilot') },
+    { id: 'gemini', name: 'Gemini', provider: 'Google', category: 'llm' as const, plans: plansFor('gemini') },
+    { id: 'openai-api', name: 'OpenAI API', provider: 'OpenAI', category: 'api' as const, plans: plansFor('openai-api') },
+    { id: 'anthropic-api', name: 'Anthropic API', provider: 'Anthropic', category: 'api' as const, plans: plansFor('anthropic-api') },
+    { id: 'windsurf', name: 'Windsurf', provider: 'Codeium', category: 'code' as const, plans: plansFor('windsurf') },
 ];
 
 // Use Cases

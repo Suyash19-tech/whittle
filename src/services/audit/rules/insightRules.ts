@@ -1,130 +1,163 @@
-import type { InsightRuleFn, ToolInput } from './types';
+import type { InsightRuleFn } from './types';
 
-/**
- * Insight rules — structural patterns across the full tool list.
- *
- * Unlike tool rules (which evaluate one tool at a time), insight rules
- * look at the entire stack and surface cross-cutting observations.
- *
- * Each rule returns a single InsightOutput or null.
- * All matching insights are collected and shown in the Opportunity Insights section.
- */
+// ─── Capability overlap groups ────────────────────────────────────────────────
 
-// ─── Overlap detection ────────────────────────────────────────────────────────
+const HIGH_OVERLAP_GROUPS: string[][] = [
+    ['cursor', 'github-copilot', 'windsurf'],
+];
 
-/**
- * Detect multiple tools in the same category.
- * More than one LLM or more than one code editor is a common source of waste.
- */
-export const overlappingSubscriptions: InsightRuleFn = (allTools) => {
-    const categoryCounts = allTools.reduce<Record<string, number>>((acc, t) => {
-        acc[t.category] = (acc[t.category] ?? 0) + 1;
-        return acc;
-    }, {});
+const PROVIDER_MAP: Record<string, string> = {
+    'chatgpt': 'OpenAI',
+    'openai-api': 'OpenAI',
+    'claude': 'Anthropic',
+    'anthropic-api': 'Anthropic',
+};
 
-    const overlapping = Object.values(categoryCounts).filter((n) => n > 1).length;
-    if (overlapping === 0) return null;
+// ─── Insight rules ────────────────────────────────────────────────────────────
 
-    const total = Object.entries(categoryCounts)
-        .filter(([, n]) => n > 1)
-        .reduce((sum, [, n]) => sum + n, 0);
+/** High capability overlap: same-purpose tools (e.g. Cursor + Copilot). */
+export const capabilityOverlapInsight: InsightRuleFn = (allTools) => {
+    const names: string[] = [];
+    for (const group of HIGH_OVERLAP_GROUPS) {
+        const inGroup = allTools.filter((t) => group.includes(t.toolId));
+        if (inGroup.length >= 2) names.push(...inGroup.map((t) => t.toolName));
+    }
+    const unique = [...new Set(names)];
+    if (unique.length < 2) return null;
 
     return {
-        label: `${total} overlapping subscription${total > 1 ? 's' : ''} detected`,
+        label: `${unique.join(' and ')} serve overlapping purposes — consolidation likely saves cost`,
         iconName: 'Layers',
         color: 'amber',
     };
 };
 
-// ─── Savings threshold ────────────────────────────────────────────────────────
-
 /**
- * Surface a positive insight when total potential savings exceed $1,000/year.
- * This reinforces the value of acting on recommendations.
+ * Provider overlap: multiple products from the same provider.
+ * ChatGPT + OpenAI API is intentional — don't flag it.
  */
-export const significantAnnualSavings: InsightRuleFn = (allTools) => {
-    const totalMonthlySavings = allTools.reduce((sum, t) => {
-        // We don't have recommended costs here — use a conservative 30% estimate
-        // The real figure comes from the recommendation engine output
-        return sum + t.monthlySpend * 0.3;
-    }, 0);
+export const providerOverlapInsight: InsightRuleFn = (allTools) => {
+    const byProvider: Record<string, string[]> = {};
+    allTools.forEach((t) => {
+        const p = PROVIDER_MAP[t.toolId];
+        if (p) { byProvider[p] = byProvider[p] ?? []; byProvider[p].push(t.toolName); }
+    });
 
-    const annualEstimate = Math.round(totalMonthlySavings * 12);
-    if (annualEstimate < 500) return null;
+    const nonObvious = Object.entries(byProvider)
+        .filter(([, ts]) => ts.length > 1)
+        .filter(([provider, ts]) => {
+            if (provider === 'OpenAI' && ts.includes('ChatGPT') && ts.includes('OpenAI API')) return false;
+            if (provider === 'Anthropic' && ts.includes('Claude') && ts.includes('Anthropic API')) return false;
+            return true;
+        });
+
+    if (nonObvious.length === 0) return null;
+    const [provider] = nonObvious[0];
 
     return {
-        label: `Potential annual savings exceed $${annualEstimate.toLocaleString()}`,
-        iconName: 'TrendingDown',
-        color: 'teal',
+        label: `Multiple ${provider} products in stack — review for redundancy`,
+        iconName: 'Layers',
+        color: 'sky',
     };
 };
 
-// ─── Enterprise feature flag ──────────────────────────────────────────────────
-
 /**
- * Flag when any tool is on an enterprise plan.
- * Enterprise tiers include features (SLA, compliance, SSO) that are
- * rarely necessary for early-stage teams.
+ * API spend concentration.
+ * High API spend is not inherently bad — recommend monitoring, not removal.
  */
+export const apiSpendConcentration: InsightRuleFn = (allTools) => {
+    const total = allTools.reduce((s, t) => s + t.monthlySpend, 0);
+    if (total === 0) return null;
+    const apiSpend = allTools.filter((t) => t.category === 'api').reduce((s, t) => s + t.monthlySpend, 0);
+    const ratio = apiSpend / total;
+    if (ratio < 0.50) return null;
+
+    const pct = Math.round(ratio * 100);
+
+    if (ratio >= 0.85) {
+        return {
+            label: `API infrastructure accounts for ${pct}% of AI spend — usage monitoring recommended`,
+            iconName: 'AlertCircle',
+            color: 'amber',
+        };
+    }
+    if (ratio >= 0.70) {
+        return {
+            label: `API spend is dominant — consider caching repetitive generations to reduce token costs`,
+            iconName: 'TrendingDown',
+            color: 'sky',
+        };
+    }
+    return {
+        label: `API spend represents ${pct}% of total — audit token-heavy workflows for efficiency`,
+        iconName: 'TrendingDown',
+        color: 'slate',
+    };
+};
+
+/** Enterprise plan on a small team — structural mismatch. */
 export const enterpriseFeaturesUnderutilised: InsightRuleFn = (allTools, teamSize) => {
     const hasEnterprise = allTools.some((t) => t.planId === 'enterprise');
     if (!hasEnterprise) return null;
     if (['51-100', '100+'].includes(teamSize)) return null;
 
     return {
-        label: 'Enterprise features may be underutilised at your team size',
+        label: 'Enterprise-tier features are unlikely to be fully utilised at your current team size',
         iconName: 'AlertCircle',
         color: 'sky',
     };
 };
 
-// ─── Coding assistant overlap ─────────────────────────────────────────────────
-
-/**
- * Specifically flag when multiple code editors are present.
- * Cursor, GitHub Copilot, and Windsurf all serve the same core purpose.
- */
-export const multipleCodeEditors: InsightRuleFn = (allTools) => {
-    const codeTools = allTools.filter((t) => t.category === 'code');
-    if (codeTools.length < 2) return null;
+/** Significant recoverable savings — positive reinforcement. */
+export const significantSavingsAvailable: InsightRuleFn = (allTools) => {
+    const subscriptionSpend = allTools
+        .filter((t) => t.category !== 'api')
+        .reduce((s, t) => s + t.monthlySpend, 0);
+    const annualEstimate = Math.round(subscriptionSpend * 0.25 * 12);
+    if (annualEstimate < 600) return null;
 
     return {
-        label: `${codeTools.length} AI code editors detected — consolidation possible`,
-        iconName: 'Zap',
-        color: 'amber',
-    };
-};
-
-// ─── Quick win ────────────────────────────────────────────────────────────────
-
-/**
- * Surface a quick-win insight when at least one high-confidence
- * recommendation exists. Encourages action.
- */
-export const quickWinAvailable: InsightRuleFn = (allTools) => {
-    // Proxy: if any tool is on a team/business plan with few seats, a quick win exists
-    const hasQuickWin = allTools.some(
-        (t) => ['team', 'business'].includes(t.planId) && t.seats <= 5
-    );
-    if (!hasQuickWin) return null;
-
-    return {
-        label: 'At least one high-confidence optimisation is immediately actionable',
-        iconName: 'Zap',
+        label: `Estimated annual savings of $${annualEstimate.toLocaleString()}+ are within reach`,
+        iconName: 'TrendingDown',
         color: 'teal',
     };
 };
 
-// ─── Insight rule registry ────────────────────────────────────────────────────
-
 /**
- * All insight rules, evaluated against the full tool list.
- * All matching rules fire (unlike tool rules which stop at first match).
+ * Multiple LLMs — nuanced.
+ * 2 LLMs is fine (ChatGPT + Claude is common). Only flag 3+.
  */
+export const multipleLLMsInsight: InsightRuleFn = (allTools) => {
+    const llms = allTools.filter((t) => t.category === 'llm');
+    if (llms.length < 3) return null;
+
+    return {
+        label: `${llms.length} LLMs in stack — verify each serves a distinct workflow`,
+        iconName: 'Layers',
+        color: 'sky',
+    };
+};
+
+/** Stack complexity: many paid subscriptions. */
+export const stackComplexity: InsightRuleFn = (allTools) => {
+    const paid = allTools.filter((t) => !['free', 'payg'].includes(t.planId));
+    if (paid.length <= 4) return null;
+
+    return {
+        label: `${paid.length} active paid subscriptions — a periodic stack review is recommended`,
+        iconName: 'Zap',
+        color: 'slate',
+    };
+};
+
+// ─── Registry ─────────────────────────────────────────────────────────────────
+
 export const INSIGHT_RULES: InsightRuleFn[] = [
-    overlappingSubscriptions,
-    significantAnnualSavings,
+    capabilityOverlapInsight,
+    providerOverlapInsight,
+    apiSpendConcentration,
     enterpriseFeaturesUnderutilised,
-    multipleCodeEditors,
-    quickWinAvailable,
+    significantSavingsAvailable,
+    multipleLLMsInsight,
+    stackComplexity,
 ];

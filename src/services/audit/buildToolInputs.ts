@@ -1,24 +1,19 @@
 import { SUPPORTED_AI_TOOLS } from '@/constants';
+import { computeMonthlySpend, isVariablePricing } from './pricingCatalog';
 import type { ToolInput } from './rules/types';
 
 /**
  * buildToolInputs
  *
- * Converts the Zustand audit store's toolConfigs shape into the
- * ToolInput[] format the rules engine expects.
+ * Converts the Zustand store's toolConfigs into ToolInput[] for the engine.
  *
- * This is the adapter between the form layer and the engine layer.
- * It resolves tool metadata (name, category) from SUPPORTED_AI_TOOLS
- * and merges it with the user-entered config (plan, spend, seats).
+ * CRITICAL: monthlySpend is ALWAYS re-derived from the pricing catalog here,
+ * not taken blindly from the store. This is the final consistency gate —
+ * even if the store somehow holds a stale value, the engine always operates
+ * on the mathematically correct (planPrice × seats) figure.
  *
- * @example
- *   const tools = buildToolInputs({
- *     selectedTools: ['chatgpt', 'cursor'],
- *     toolConfigs: {
- *       chatgpt: { plan: 'team', monthlySpend: 150, seats: 5 },
- *       cursor:  { plan: 'business', monthlySpend: 160, seats: 4 },
- *     },
- *   });
+ * Exception: variable-pricing plans (API tools) use the store value because
+ * their spend is usage-based and cannot be derived from a fixed price.
  */
 export function buildToolInputs(params: {
     selectedTools: string[];
@@ -30,23 +25,26 @@ export function buildToolInputs(params: {
         const meta = SUPPORTED_AI_TOOLS.find((t) => t.id === toolId);
         const config = toolConfigs[toolId];
 
-        // Skip if metadata or config is missing
-        if (!meta || !config) return [];
+        if (!meta || !config || !config.plan) return [];
 
-        // Resolve plan display name from the tool's plan list
         const planMeta = meta.plans.find((p) => p.id === config.plan);
         const planName = planMeta?.name ?? config.plan;
 
-        return [
-            {
-                toolId: meta.id,
-                toolName: meta.name,
-                category: meta.category,
-                planId: config.plan,
-                planName,
-                monthlySpend: config.monthlySpend,
-                seats: config.seats,
-            } satisfies ToolInput,
-        ];
+        // Re-derive spend from catalog — this is the single source of truth.
+        // For variable pricing, fall back to the store value (user-entered).
+        const catalogSpend = computeMonthlySpend(toolId, config.plan, config.seats);
+        const monthlySpend = (catalogSpend !== null && !isVariablePricing(toolId, config.plan))
+            ? catalogSpend
+            : config.monthlySpend;
+
+        return [{
+            toolId: meta.id,
+            toolName: meta.name,
+            category: meta.category,
+            planId: config.plan,
+            planName,
+            monthlySpend,
+            seats: config.seats,
+        } satisfies ToolInput];
     });
 }

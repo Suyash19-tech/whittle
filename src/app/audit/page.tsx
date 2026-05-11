@@ -155,30 +155,28 @@ export default function AuditPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
-    // Cycle through loading phases for premium feel
-    for (let i = 0; i < LOADING_PHASES.length; i++) {
-      setLoadingPhase(LOADING_PHASES[i]);
-      await new Promise((r) => setTimeout(r, 600));
-    }
-
-    // Phase 1+2: run synchronous engine work while showing early phases
+    // Phase 1: build inputs and run engine
     setLoadingPhase(LOADING_PHASES[0]);
     await new Promise((r) => setTimeout(r, 500));
 
-    // Build tool inputs from form state
+    // Single source of truth: build tool inputs once from canonical store state.
+    // toolInputs is passed to BOTH the engine AND the calculator so every tool
+    // contributes to currentMonthlySpend — not just those with recommendations.
     const toolInputs = buildToolInputs({ selectedTools, toolConfigs });
 
-    // Run rules engine
+    // Run rules engine against ALL tool inputs
     const { recommendations, insights } = generateRecommendations({
       tools: toolInputs,
       teamSize,
       useCase,
     });
 
+    // Phase 2: compute totals
     setLoadingPhase(LOADING_PHASES[1]);
     await new Promise((r) => setTimeout(r, 500));
 
-    // Compute summary + score
+    // Pass toolInputs so ALL tools contribute to currentMonthlySpend (bug fix:
+    // previously only recommendations were summed, dropping tools with no rule match)
     const { summary, score } = computeAuditSummary({
       id: `audit-${Date.now()}`,
       date: new Date().toLocaleDateString('en-US', {
@@ -186,6 +184,7 @@ export default function AuditPage() {
       }),
       teamSize: TEAM_SIZES.find((s) => s.value === teamSize)?.label ?? teamSize,
       useCase: USE_CASES.find((u) => u.id === useCase)?.label ?? useCase,
+      toolInputs,
       recommendations,
     });
 
