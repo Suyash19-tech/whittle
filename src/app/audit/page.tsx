@@ -42,44 +42,46 @@ const LOADING_PHASES = [
 function LoadingOverlay({ phase }: { phase: string }) {
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 50 }}
     >
-      <div className="flex flex-col items-center gap-6 text-center">
-        {/* Spinner */}
-        <div className="relative flex h-16 w-16 items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-slate-100" />
-          <motion.div
-            className="absolute inset-0 rounded-full border-2 border-transparent border-t-sky-500"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          />
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500">
-            <svg className="h-4 w-4 text-white" viewBox="0 0 16 16" fill="none">
-              <path d="M3 13 C5 7, 8 3, 13 2 C11 6, 9 9, 8 13 Z" fill="currentColor" />
-              <path d="M3 13 C5 11, 7 11, 8 13" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" />
-            </svg>
+      <div className="flex h-full w-full flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-6 text-center">
+          {/* Spinner */}
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-2 border-slate-100" />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              style={{ position: 'absolute', inset: 0, borderRadius: '9999px', border: '2px solid transparent', borderTopColor: '#0ea5e9' }}
+            />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500">
+              <svg className="h-4 w-4 text-white" viewBox="0 0 16 16" fill="none">
+                <path d="M3 13 C5 7, 8 3, 13 2 C11 6, 9 9, 8 13 Z" fill="currentColor" />
+                <path d="M3 13 C5 11, 7 11, 8 13" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" />
+              </svg>
+            </div>
           </div>
+
+          {/* Phase text */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={phase}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.3 }}
+              style={{ fontSize: '0.875rem', fontWeight: 500, color: '#475569' }}
+            >
+              {phase}
+            </motion.p>
+          </AnimatePresence>
+
+          <p className="text-xs text-slate-400">This takes just a moment</p>
         </div>
-
-        {/* Phase text */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={phase}
-            className="text-sm font-medium text-slate-600"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.3 }}
-          >
-            {phase}
-          </motion.p>
-        </AnimatePresence>
-
-        <p className="text-xs text-slate-400">This takes just a moment</p>
       </div>
     </motion.div>
   );
@@ -101,7 +103,6 @@ export default function AuditPage() {
     removeTool,
     updateToolConfig,
     setAuditResults,
-    resetForm,
   } = useAuditStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -359,7 +360,6 @@ export default function AuditPage() {
                         selectedPlan={config.plan}
                         monthlySpend={config.monthlySpend}
                         seats={config.seats}
-                        plans={tool.plans}
                         onPlanChange={(plan) => {
                           updateToolConfig(toolId, { plan });
                           setValidationErrors((prev) => {
@@ -447,47 +447,48 @@ export default function AuditPage() {
               <div className="flex items-start gap-2.5 rounded-xl bg-sky-50/60 px-4 py-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-500" />
                 <p className="text-xs text-slate-600">
-                  Your data stays in your browser. We don't store or share your spend information.
+                  Your data stays in your browser. We don&apos;t store or share your spend information.
                 </p>
               </div>
             </StepContainer>
 
             {/* Navigation */}
             <motion.div
-              className="mt-10 flex items-center justify-between"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <button
-                onClick={handlePrev}
-                disabled={currentStep === 0}
-                className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Previous
-              </button>
+              <div className="mt-10 flex items-center justify-between">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentStep === 0}
+                  className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </button>
 
-              {currentStep < STEPS.length - 1 ? (
-                <GradientButton onClick={handleNext} disabled={!canProceed()}>
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </GradientButton>
-              ) : (
-                <GradientButton onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating…
-                    </>
-                  ) : (
-                    <>
-                      Generate Audit
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </GradientButton>
-              )}
+                {currentStep < STEPS.length - 1 ? (
+                  <GradientButton onClick={handleNext} disabled={!canProceed()}>
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </GradientButton>
+                ) : (
+                  <GradientButton onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating…
+                      </>
+                    ) : (
+                      <>
+                        Generate Audit
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </GradientButton>
+                )}
+              </div>
             </motion.div>
 
             <p className="mt-5 text-center text-xs text-slate-400">

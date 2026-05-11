@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOOL_ICON_MAP } from './tool-icons';
@@ -17,15 +16,14 @@ export function ToolCard({ id, name, provider, isSelected, onClick }: ToolCardPr
     const Icon = TOOL_ICON_MAP[id];
 
     return (
-        <motion.button
+        <button
             type="button"
             onClick={onClick}
             aria-pressed={isSelected}
             aria-label={`${isSelected ? 'Deselect' : 'Select'} ${name}`}
-            whileTap={{ scale: 0.98 }}
             className={cn(
                 'group relative w-full rounded-xl border p-5 text-left',
-                'transition-all duration-150',
+                'transition-all duration-150 active:scale-[0.98]',
                 'focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:ring-offset-2',
                 isSelected
                     ? 'border-sky-400 bg-sky-50/60 shadow-[0_0_0_3px_rgba(14,165,233,0.12)]'
@@ -33,16 +31,12 @@ export function ToolCard({ id, name, provider, isSelected, onClick }: ToolCardPr
             )}
         >
             {/* Check indicator */}
-            <motion.div
-                className={cn(
-                    'absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors duration-150',
-                    isSelected ? 'border-sky-500 bg-sky-500' : 'border-slate-200 bg-white'
-                )}
-                animate={{ scale: isSelected ? 1 : 0.85, opacity: isSelected ? 1 : 0.4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-            >
+            <div className={cn(
+                'absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-150',
+                isSelected ? 'border-sky-500 bg-sky-500 scale-100 opacity-100' : 'border-slate-200 bg-white scale-90 opacity-40'
+            )}>
                 {isSelected && <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden="true" />}
-            </motion.div>
+            </div>
 
             {/* Icon */}
             <div className={cn(
@@ -60,6 +54,6 @@ export function ToolCard({ id, name, provider, isSelected, onClick }: ToolCardPr
                 {name}
             </p>
             <p className="mt-0.5 text-xs text-slate-500">{provider}</p>
-        </motion.button>
+        </button>
     );
 }
