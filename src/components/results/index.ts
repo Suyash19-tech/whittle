@@ -6,3 +6,4 @@ export { RecommendationCard } from './RecommendationCard';
 export { OpportunityInsightChip } from './OpportunityInsightChip';
 export { AISummaryCard } from './AISummaryCard';
 export { LeadCapture } from './LeadCapture';
+export { ConsultationCTA } from './ConsultationCTA';

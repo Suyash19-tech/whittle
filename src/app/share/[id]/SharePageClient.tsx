@@ -14,6 +14,7 @@ import {
   OpportunityInsightChip,
   AISummaryCard,
   LeadCapture,
+  ConsultationCTA,
 } from '@/components/results';
 import { fetchReportFromSupabase } from '@/lib/supabase/reports';
 import type { AuditResult } from '@/types/audit';
@@ -222,6 +223,17 @@ export default function SharePageClient() {
                 reportId={summary.id} 
                 teamSize={summary.teamSize} 
                 estimatedSavings={summary.annualSavings} 
+              />
+            </div>
+          </motion.div>
+
+          {/* Consultation CTA — only renders when monthlySavings >= 100 */}
+          <motion.div {...fadeUp(0.46)}>
+            <div className="mb-12">
+              <ConsultationCTA
+                reportId={summary.id}
+                monthlySavings={summary.monthlySavings}
+                estimatedSavings={summary.annualSavings}
               />
             </div>
           </motion.div>
