@@ -1,14 +1,20 @@
 /**
  * Pricing Catalog — single source of truth for all AI tool pricing.
  *
- * All prices are per-seat per-month in USD.
- * Variable/usage-based plans use 0 as the base (user enters actual spend).
+ * All prices are per-seat per-month in USD (monthly billing).
+ * Annual billing typically saves 15–20% but we use monthly rates as the baseline.
  *
- * This catalog is the ONLY place prices are defined.
- * The form, engine, and calculators all derive from here.
+ * Sources (verified May 2026):
+ *   Cursor:         https://docs.cursor.com/account/pricing
+ *   GitHub Copilot: https://github.com/features/copilot/plans
+ *   Claude:         https://www.anthropic.com/pricing
+ *   ChatGPT:        https://openai.com/chatgpt/pricing/
+ *   Gemini:         https://gemini.google/subscriptions/
+ *   Windsurf:       https://codeium.com/pricing
+ *   OpenAI API:     https://openai.com/api/pricing/ (variable — user enters actual)
+ *   Anthropic API:  https://www.anthropic.com/api  (variable — user enters actual)
  *
  * Last reviewed: May 12, 2026
- * Sources: official pricing pages for each provider.
  */
 
 export type PlanId = string;
@@ -19,104 +25,117 @@ export interface PlanDefinition {
     name: string;
     /** Price per seat per month in USD. null = custom/contact sales. */
     pricePerSeat: number | null;
-    /** If true, price is usage-based and user must enter actual spend */
+    /** If true, price is usage-based — user must enter actual spend */
     isVariablePricing?: boolean;
-}
-
-export interface ToolPricing {
-    toolId: ToolId;
-    plans: PlanDefinition[];
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
 
 export const PRICING_CATALOG: Record<ToolId, PlanDefinition[]> = {
-    chatgpt: [
-        { id: 'free', name: 'Free', pricePerSeat: 0 },
-        { id: 'plus', name: 'Plus', pricePerSeat: 20 },
-        { id: 'team', name: 'Team', pricePerSeat: 30 },
-        { id: 'enterprise', name: 'Enterprise', pricePerSeat: 60 },
-    ],
-    claude: [
-        { id: 'free', name: 'Free', pricePerSeat: 0 },
-        { id: 'pro', name: 'Pro', pricePerSeat: 20 },
-        { id: 'max', name: 'Max', pricePerSeat: 100 },
-        { id: 'team', name: 'Team', pricePerSeat: 30 },
-    ],
+
+    // ── Cursor ──────────────────────────────────────────────────────────────────
+    // Hobby (free), Pro $20/mo, Business $40/seat/mo
+    // Source: cursor.com/pricing (May 2026)
     cursor: [
-        { id: 'free', name: 'Free', pricePerSeat: 0 },
+        { id: 'hobby', name: 'Hobby', pricePerSeat: 0 },
         { id: 'pro', name: 'Pro', pricePerSeat: 20 },
         { id: 'business', name: 'Business', pricePerSeat: 40 },
     ],
+
+    // ── GitHub Copilot ───────────────────────────────────────────────────────────
+    // Free, Individual $10, Business $19, Enterprise $39/seat/mo
+    // Source: github.com/features/copilot/plans (May 2026)
     'github-copilot': [
         { id: 'free', name: 'Free', pricePerSeat: 0 },
         { id: 'individual', name: 'Individual', pricePerSeat: 10 },
-        { id: 'business', name: 'Business', pricePerSeat: 21 },
+        { id: 'business', name: 'Business', pricePerSeat: 19 },
         { id: 'enterprise', name: 'Enterprise', pricePerSeat: 39 },
     ],
-    gemini: [
+
+    // ── Claude (Anthropic) ───────────────────────────────────────────────────────
+    // Free, Pro $20/mo, Max $100/mo (5x), Max $200/mo (20x), Team $30/seat/mo
+    // Enterprise: custom pricing (null)
+    // Source: anthropic.com/pricing (May 2026)
+    claude: [
         { id: 'free', name: 'Free', pricePerSeat: 0 },
-        { id: 'advanced', name: 'Advanced', pricePerSeat: 20 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 20 },
+        { id: 'max-5x', name: 'Max (5x)', pricePerSeat: 100 },
+        { id: 'max-20x', name: 'Max (20x)', pricePerSeat: 200 },
+        { id: 'team', name: 'Team', pricePerSeat: 30 },
+        { id: 'enterprise', name: 'Enterprise', pricePerSeat: null },
+        { id: 'api', name: 'API (direct)', pricePerSeat: 0, isVariablePricing: true },
     ],
-    windsurf: [
+
+    // ── ChatGPT (OpenAI) ─────────────────────────────────────────────────────────
+    // Free, Plus $20/mo, Pro $200/mo, Team $30/seat/mo, Enterprise custom
+    // Source: openai.com/chatgpt/pricing/ (May 2026)
+    chatgpt: [
         { id: 'free', name: 'Free', pricePerSeat: 0 },
-        { id: 'pro', name: 'Pro', pricePerSeat: 15 },
+        { id: 'plus', name: 'Plus', pricePerSeat: 20 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 200 },
+        { id: 'team', name: 'Team', pricePerSeat: 30 },
+        { id: 'enterprise', name: 'Enterprise', pricePerSeat: null },
+        { id: 'api', name: 'API (direct)', pricePerSeat: 0, isVariablePricing: true },
     ],
+
+    // ── OpenAI API ───────────────────────────────────────────────────────────────
+    // Pure usage-based — no fixed seat price
+    // Source: openai.com/api/pricing/ (May 2026)
     'openai-api': [
         { id: 'payg', name: 'Pay-as-you-go', pricePerSeat: 0, isVariablePricing: true },
     ],
+
+    // ── Anthropic API ────────────────────────────────────────────────────────────
+    // Pure usage-based — no fixed seat price
+    // Source: anthropic.com/api (May 2026)
     'anthropic-api': [
         { id: 'payg', name: 'Pay-as-you-go', pricePerSeat: 0, isVariablePricing: true },
+    ],
+
+    // ── Gemini (Google) ──────────────────────────────────────────────────────────
+    // Free, AI Pro $19.99/mo (bundled with Google One AI Premium)
+    // AI Ultra: higher tier, ~$249.99/mo (Google One AI Ultra)
+    // Source: gemini.google/subscriptions/ (May 2026)
+    gemini: [
+        { id: 'free', name: 'Free', pricePerSeat: 0 },
+        { id: 'ai-pro', name: 'AI Pro', pricePerSeat: 19.99 },
+        { id: 'ai-ultra', name: 'AI Ultra', pricePerSeat: 249.99 },
+        { id: 'api', name: 'API (direct)', pricePerSeat: 0, isVariablePricing: true },
+    ],
+
+    // ── Windsurf (Codeium) ───────────────────────────────────────────────────────
+    // Free (25 credits/mo), Pro $20/mo, Teams $40/seat/mo, Enterprise $60/seat/mo
+    // Source: codeium.com/pricing (May 2026)
+    windsurf: [
+        { id: 'free', name: 'Free', pricePerSeat: 0 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 20 },
+        { id: 'teams', name: 'Teams', pricePerSeat: 40 },
+        { id: 'enterprise', name: 'Enterprise', pricePerSeat: 60 },
     ],
 };
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-/**
- * getPlanPrice
- * Returns the per-seat price for a given tool + plan combination.
- * Returns null for custom/enterprise pricing.
- * Returns 0 for variable pricing (user enters actual spend).
- */
 export function getPlanPrice(toolId: ToolId, planId: PlanId): number | null {
-    const plans = PRICING_CATALOG[toolId];
-    if (!plans) return null;
-    const plan = plans.find((p) => p.id === planId);
-    if (!plan) return null;
-    return plan.pricePerSeat;
+    const plan = PRICING_CATALOG[toolId]?.find((p) => p.id === planId);
+    return plan?.pricePerSeat ?? null;
 }
 
-/**
- * computeMonthlySpend
- * Derives monthly spend from plan price × seats.
- * Returns null if the plan has custom pricing (user must enter manually).
- * Returns 0 for variable pricing (user enters actual spend separately).
- */
 export function computeMonthlySpend(
     toolId: ToolId,
     planId: PlanId,
     seats: number
 ): number | null {
     const price = getPlanPrice(toolId, planId);
-    if (price === null) return null; // custom pricing
+    if (price === null) return null;
     return price * Math.max(1, seats);
 }
 
-/**
- * isVariablePricing
- * Returns true if the plan is usage-based (API tools).
- */
 export function isVariablePricing(toolId: ToolId, planId: PlanId): boolean {
-    const plans = PRICING_CATALOG[toolId];
-    if (!plans) return false;
-    const plan = plans.find((p) => p.id === planId);
+    const plan = PRICING_CATALOG[toolId]?.find((p) => p.id === planId);
     return plan?.isVariablePricing === true;
 }
 
-/**
- * getPlansForTool
- * Returns the plan list for a tool, falling back to an empty array.
- */
 export function getPlansForTool(toolId: ToolId): PlanDefinition[] {
     return PRICING_CATALOG[toolId] ?? [];
 }
