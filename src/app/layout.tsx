@@ -5,6 +5,7 @@ import '@/styles/globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
     title: 'Whittle - AI Spend Optimization',
     description:
         'Audit your AI stack and uncover unnecessary spend in under 60 seconds.',

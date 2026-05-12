@@ -16,12 +16,12 @@ export function cn(...inputs: ClassValue[]) {
  * @param currency - Currency code (default: USD)
  * @returns Formatted currency string
  */
-export function formatCurrency(value: number, currency: string = 'USD'): string {
+export function formatCurrency(value: number, currency: string = 'USD', maxFractionDigits: number = 2): string {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency,
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
+        maximumFractionDigits: maxFractionDigits,
     }).format(value);
 }
 
