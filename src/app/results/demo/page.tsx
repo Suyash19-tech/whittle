@@ -9,6 +9,7 @@ import { GradientButton } from '@/components/ui/gradient-button';
 import { MOCK_AUDIT } from '@/constants/mockAuditData';
 import { useAuditStore } from '@/store/audit.store';
 import { saveReport, buildShareUrl } from '@/lib/shareReport';
+import { LeadCapture } from '@/components/results';
 import type { AccentColor, ConfidenceLevel } from '@/types/audit';
 
 const ICON_MAP = { Layers, TrendingDown, AlertCircle, Zap } as const;
@@ -381,6 +382,16 @@ export default function ResultsDemoPage() {
                     </motion.div>
 
                     <motion.div {...fadeUp(0.42)}>
+                        <div className="mb-12">
+                            <LeadCapture 
+                                reportId={summary.id} 
+                                teamSize={summary.teamSize} 
+                                estimatedSavings={summary.annualSavings} 
+                            />
+                        </div>
+                    </motion.div>
+
+                    <motion.div {...fadeUp(0.48)}>
                         <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-10 text-center">
                             <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Next step</p>
                             <h2 className="mb-2 text-xl font-bold text-white">Ready to implement these changes?</h2>

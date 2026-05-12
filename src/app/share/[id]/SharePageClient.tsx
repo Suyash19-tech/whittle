@@ -13,6 +13,7 @@ import {
   RecommendationCard,
   OpportunityInsightChip,
   AISummaryCard,
+  LeadCapture,
 } from '@/components/results';
 import { fetchReportFromSupabase } from '@/lib/supabase/reports';
 import type { AuditResult } from '@/types/audit';
@@ -214,8 +215,19 @@ export default function SharePageClient() {
             </motion.div>
           )}
 
-          {/* CTA */}
+          {/* Lead Capture */}
           <motion.div {...fadeUp(0.42)}>
+            <div className="mb-12">
+              <LeadCapture 
+                reportId={summary.id} 
+                teamSize={summary.teamSize} 
+                estimatedSavings={summary.annualSavings} 
+              />
+            </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div {...fadeUp(0.48)}>
             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 px-8 py-10 text-center">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Free · No sign-up required
