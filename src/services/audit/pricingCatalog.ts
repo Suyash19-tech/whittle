@@ -6,6 +6,9 @@
  *
  * This catalog is the ONLY place prices are defined.
  * The form, engine, and calculators all derive from here.
+ *
+ * Last reviewed: May 12, 2026
+ * Sources: official pricing pages for each provider.
  */
 
 export type PlanId = string;
