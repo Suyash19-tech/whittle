@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
@@ -29,6 +29,7 @@ export const metadata: Metadata = {
         title: 'Whittle - AI Spend Optimization',
         description:
             'Audit your AI stack and uncover unnecessary spend in under 60 seconds.',
+        images: [{ url: '/og/whittle-default.jpg', width: 1200, height: 630, alt: 'Whittle — AI Spend Optimization' }],
         siteName: 'Whittle',
     },
     twitter: {

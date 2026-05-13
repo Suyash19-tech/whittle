@@ -229,7 +229,7 @@ export default function AuditPage() {
         {isSubmitting && <LoadingOverlay phase={loadingPhase} />}
       </AnimatePresence>
 
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
         <Container>
           <div className="mx-auto max-w-2xl py-10 sm:py-14">
 

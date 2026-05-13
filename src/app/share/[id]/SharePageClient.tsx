@@ -104,7 +104,7 @@ export default function SharePageClient() {
   const { summary, score, recommendations, insights, aiSummary } = audit;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
 
       {/* Top bar */}
       <div className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">

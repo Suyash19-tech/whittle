@@ -55,7 +55,7 @@ export default function LiveResultsPage() {
     const { summary, score, recommendations, insights, aiSummary } = auditResults;
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
 
             {/* Top bar */}
             <div className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">
@@ -77,11 +77,11 @@ export default function LiveResultsPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50">
-                                <Share2 className="h-3.5 w-3.5" />Share
+                            <button aria-label="Share this report" className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50">
+                                <Share2 className="h-3.5 w-3.5" aria-hidden="true" />Share
                             </button>
-                            <button className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50">
-                                <Download className="h-3.5 w-3.5" />Export
+                            <button aria-label="Export this report" className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50">
+                                <Download className="h-3.5 w-3.5" aria-hidden="true" />Export
                             </button>
                         </div>
                     </div>
