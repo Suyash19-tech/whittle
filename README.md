@@ -15,16 +15,25 @@ https://whittle-liart.vercel.app
 # Screenshots
 
 ## Landing Page
-![Landing Page](./public/screenshots/landing.png)
+![Landing Page](./public/Landing_Page.png)
 
 ## Audit Flow
-![Audit Flow](./public/screenshots/audit.png)
+1.Choose Ai tools :
+![Choose tool](./public/Ai%20Tools.png)
+
+2.Choose Ai Plans :
+![Choose Ai plans](./public/Ai_Plan_Form.png)
+
+3.Choose Ai plans Review :
+![Choose Ai plans review](./public/Final_Review.png)
 
 ## Optimization Report
-![Optimization Report](./public/screenshots/report.png)
+![Optimization Report](./public/AI_Summary_Report.png)
 
 ## Recommendation Engine
-![Recommendations](./public/screenshots/recommendations.png)
+![Recommendations](./public/Score_Recommendations.png)
+
+![tool Recommendations](./public/Score_Recommendations.png)
 
 ---
 
@@ -171,6 +180,9 @@ Optimizations included:
 * reduced-motion support
 * optimized font loading
 * metadata cleanup
+
+
+![Lighthouse Stats](./public/Performace_Score_LightHouse.png)
 
 ---
 
