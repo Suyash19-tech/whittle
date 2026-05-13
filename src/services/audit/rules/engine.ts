@@ -52,39 +52,129 @@ export function generateRecommendations(input: EngineInput): EngineOutput {
 
         const ctx: RuleContext = { tool, allTools: tools, teamSize, useCase };
 
-        // Evaluate rules in order — stop at first match for this tool
+        // Evaluate all rules for this tool
+        const toolRecs = new Map<string, ToolRecommendation>();
+
         for (const rule of TOOL_RULES) {
             const output = rule(ctx);
             if (!output) continue;
 
             // Only emit a recommendation if there's an actual saving
             const monthlySaving = tool.monthlySpend - output.recommendedMonthlyCost;
-            if (monthlySaving <= 0) break;
+            if (monthlySaving <= 0) continue;
 
-            recommendations.push({
+            const existing = toolRecs.get(output.recommendedPlanName);
+
+            if (existing) {
+                // Merge duplicate findings for the same recommended plan
+                const confWeight = { high: 3, medium: 2, low: 1 };
+                const newWeight = confWeight[output.confidence];
+                const oldWeight = confWeight[existing.confidence];
+
+                if (newWeight > oldWeight) {
+                    // New rule has higher confidence, promote confidence and merge reasoning
+                    toolRecs.set(output.recommendedPlanName, {
+                        ...existing,
+                        reasoning: `${output.reasoning} (Additional context: ${existing.reasoning})`,
+                        confidence: output.confidence,
+                        confidenceColor: CONFIDENCE_COLOR[output.confidence],
+                    });
+                } else if (newWeight === oldWeight) {
+                    // Same confidence, merge reasoning
+                    existing.reasoning = `${existing.reasoning} (Additional context: ${output.reasoning})`;
+                } else {
+                    // Old rule has higher confidence, keep old but append new reasoning
+                    existing.reasoning = `${existing.reasoning} (Additional context: ${output.reasoning})`;
+                }
+            } else {
+                toolRecs.set(output.recommendedPlanName, {
+                    toolId: tool.toolId,
+                    toolName: tool.toolName,
+                    category: tool.category,
+                    currentPlan: tool.planName,
+                    currentMonthlyCost: tool.monthlySpend,
+                    recommendedPlan: output.recommendedPlanName,
+                    recommendedMonthlyCost: output.recommendedMonthlyCost,
+                    monthlySaving,
+                    annualSaving: monthlySaving * 12,
+                    reasoning: output.reasoning,
+                    confidence: output.confidence,
+                    confidenceColor: CONFIDENCE_COLOR[output.confidence],
+                    optimizationCategory: output.optimizationCategory,
+                    priority: 0,
+                });
+            }
+        }
+
+        if (toolRecs.size === 0) {
+            // Generate a lightweight KEEP verdict if no optimization rules matched
+            const keepPhrases = [
+                "appears well-aligned with your current team size and workflow requirements.",
+                "is appropriately sized for your operational scale. No changes needed.",
+                "fits your reported use case efficiently. Keep this configuration.",
+            ];
+            // Deterministic rotation based on string length to avoid identical repeated phrases
+            const phrase = keepPhrases[tool.toolName.length % keepPhrases.length];
+
+            toolRecs.set(tool.planName, {
                 toolId: tool.toolId,
                 toolName: tool.toolName,
                 category: tool.category,
                 currentPlan: tool.planName,
                 currentMonthlyCost: tool.monthlySpend,
-                recommendedPlan: output.recommendedPlanName,
-                recommendedMonthlyCost: output.recommendedMonthlyCost,
-                monthlySaving,
-                annualSaving: monthlySaving * 12,
-                reasoning: output.reasoning,
-                confidence: output.confidence,
-                confidenceColor: CONFIDENCE_COLOR[output.confidence],
-                // Priority assigned after sorting — placeholder for now
+                recommendedPlan: tool.planName, // Keep current plan
+                recommendedMonthlyCost: tool.monthlySpend, // No change in cost
+                monthlySaving: 0,
+                annualSaving: 0,
+                reasoning: `${tool.toolName} ${tool.planName} ${phrase}`,
+                confidence: 'high',
+                confidenceColor: CONFIDENCE_COLOR['high'],
+                optimizationCategory: 'keep',
                 priority: 0,
             });
-
-            break; // First matching rule wins
         }
+
+        recommendations.push(...toolRecs.values());
     });
 
+    // Group overlap recommendations to avoid repetitive cards
+    const finalRecs: ToolRecommendation[] = [];
+    const overlapGroups = new Map<string, ToolRecommendation[]>();
+
+    for (const rec of recommendations) {
+        if (rec.optimizationCategory === 'overlap') {
+            // Group by the exact reasoning string, since overlap rules generate identical reasoning for the group
+            const groupKey = rec.reasoning; 
+            if (!overlapGroups.has(groupKey)) overlapGroups.set(groupKey, []);
+            overlapGroups.get(groupKey)!.push(rec);
+        } else {
+            finalRecs.push(rec);
+        }
+    }
+
+    for (const group of overlapGroups.values()) {
+        if (group.length > 1) {
+            const combinedSaving = group.reduce((sum, r) => sum + r.monthlySaving, 0);
+            const toolNames = group.map(r => r.toolName).join(' & ');
+            const toolIds = group.map(r => r.toolId).join(',');
+
+            finalRecs.push({
+                ...group[0],
+                toolId: toolIds,
+                toolName: toolNames,
+                monthlySaving: combinedSaving,
+                annualSaving: combinedSaving * 12,
+                currentMonthlyCost: group.reduce((sum, r) => sum + r.currentMonthlyCost, 0),
+                recommendedMonthlyCost: group.reduce((sum, r) => sum + r.recommendedMonthlyCost, 0),
+            });
+        } else {
+            finalRecs.push(group[0]);
+        }
+    }
+
     // Sort by monthly saving descending, then assign priority rank
-    recommendations.sort((a, b) => b.monthlySaving - a.monthlySaving);
-    recommendations.forEach((rec, i) => {
+    finalRecs.sort((a, b) => b.monthlySaving - a.monthlySaving);
+    finalRecs.forEach((rec, i) => {
         rec.priority = i + 1;
     });
 
@@ -103,5 +193,5 @@ export function generateRecommendations(input: EngineInput): EngineOutput {
         });
     });
 
-    return { recommendations, insights };
+    return { recommendations: finalRecs, insights };
 }

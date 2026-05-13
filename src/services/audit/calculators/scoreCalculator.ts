@@ -64,19 +64,19 @@ const FACTORS = {
     // Waste ratio: recoverable spend / total spend, scaled to max -55 pts
     wasteRatioMax: 55,
 
-    // Per recommendation by confidence
-    highConfidenceRec: 10,
-    mediumConfidenceRec: 5,
+    // Per recommendation by confidence (KEEP verdicts have monthlySaving=0, so this only penalises actionable ones? Wait!)
+    highConfidenceRec: 8,
+    mediumConfidenceRec: 4,
     lowConfidenceRec: 2,
 
     // Capability overlap (same-purpose tools, e.g. Cursor + Copilot)
-    capabilityOverlap: 8,
+    capabilityOverlap: 12,
 
     // Provider overlap (same provider, different products, e.g. ChatGPT + OpenAI API)
-    providerOverlap: 3,
+    providerOverlap: 5,
 
     // Enterprise plan on a small team (< 10 seats)
-    enterpriseOverkill: 7,
+    enterpriseOverkill: 10,
 
     // API spend concentration penalty (applied at thresholds)
     apiConcentrationMedium: 3,   // 50–70% of spend is API
@@ -84,10 +84,10 @@ const FACTORS = {
     apiConcentrationCritical: 10, // 85%+
 
     // Seat inefficiency: high-tier plan with ≤ 2 seats
-    seatInefficiency: 4,
+    seatInefficiency: 5,
 
     // Stack complexity: more than 4 paid tools
-    stackComplexity: 3,
+    stackComplexity: 5,
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -183,8 +183,11 @@ export function calculateScore({ recommendations, toolInputs, currentMonthlySpen
     const wasteRatio = Math.min(totalSavings / currentMonthlySpend, 1);
     penalty += wasteRatio * FACTORS.wasteRatioMax;
 
-    // 2. Confidence-weighted recommendations
+    // 2. Confidence-weighted actionable recommendations
     recommendations.forEach((r) => {
+        // Do not penalise tools that are already perfectly optimized
+        if (r.optimizationCategory === 'keep' || r.optimizationCategory === 'optimized') return;
+        
         if (r.confidence === 'high') penalty += FACTORS.highConfidenceRec;
         if (r.confidence === 'medium') penalty += FACTORS.mediumConfidenceRec;
         if (r.confidence === 'low') penalty += FACTORS.lowConfidenceRec;

@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import type { ToolRecommendation, AccentColor, ConfidenceLevel } from '@/types/audit';
+import { formatCurrency } from '@/lib/utils';
 
 interface RecommendationCardProps {
     recommendation: ToolRecommendation;
@@ -57,14 +58,14 @@ export function RecommendationCard({ recommendation: rec }: RecommendationCardPr
                 {/* Savings */}
                 <div className="text-right" aria-label={`Save $${rec.monthlySaving} per month`}>
                     <p className="text-lg font-bold text-teal-700">
-                        −${rec.monthlySaving}
+                        −{formatCurrency(rec.monthlySaving)}
                         <span className="text-xs font-normal text-slate-400">/mo</span>
                     </p>
                     <p className="text-[11px] text-slate-400">
-                        ${rec.currentMonthlyCost} → ${rec.recommendedMonthlyCost}
+                        {formatCurrency(rec.currentMonthlyCost)} → {formatCurrency(rec.recommendedMonthlyCost)}
                     </p>
                     <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-                        ${rec.annualSaving.toLocaleString()}/yr
+                        {formatCurrency(rec.annualSaving)}/yr
                     </p>
                 </div>
             </div>

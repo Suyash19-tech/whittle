@@ -50,9 +50,10 @@ export default function LiveResultsPage() {
         }
     }, [auditResults, router]);
 
-    if (!auditResults) return null;
-
-    const { summary, score, recommendations, insights, aiSummary } = auditResults;
+    const { summary, score, recommendations, insights, aiSummary } = auditResults || {};
+    
+    // Safety check for required fields to prevent destructuring crash
+    if (!summary || !score || !aiSummary) return null;
 
     return (
         <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white">

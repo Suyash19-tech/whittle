@@ -140,6 +140,9 @@ export interface ToolRecommendation {
      * Typically sorted by monthlySaving descending.
      */
     priority: number;
+
+    /** Optimization category for internal logic and UI tagging */
+    optimizationCategory?: 'plan-downgrade' | 'seat-reduction' | 'overlap' | 'enterprise-flag' | 'optimized' | 'keep';
 }
 
 // ─── Opportunity insight ──────────────────────────────────────────────────────

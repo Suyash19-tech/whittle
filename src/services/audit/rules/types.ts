@@ -51,7 +51,7 @@ export interface RuleOutput {
     reasoning: string;
     confidence: ToolRecommendation['confidence'];
     /** Optimization category label shown in future UI breakdowns */
-    optimizationCategory: 'plan-downgrade' | 'seat-reduction' | 'overlap' | 'enterprise-flag';
+    optimizationCategory: 'plan-downgrade' | 'seat-reduction' | 'overlap' | 'enterprise-flag' | 'optimized' | 'keep';
 }
 
 /**

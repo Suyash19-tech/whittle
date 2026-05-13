@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { Container } from '@/components/shared/container';
+import { cn, formatCurrency } from '@/lib/utils';
 import { ProgressStepper } from '@/components/audit/progress-stepper';
 import { StepContainer } from '@/components/audit/step-container';
 import { ToolCard } from '@/components/audit/tool-card';
@@ -15,7 +16,6 @@ import { ToolConfigCard } from '@/components/audit/tool-config-card';
 import { ReviewCard } from '@/components/audit/review-card';
 import { useAuditStore } from '@/store/audit.store';
 import { SUPPORTED_AI_TOOLS, TEAM_SIZES, USE_CASES } from '@/constants';
-import { cn } from '@/lib/utils';
 import { TOOL_ICON_MAP } from '@/components/audit/tool-icons';
 import { buildToolInputs } from '@/services/audit/buildToolInputs';
 import { generateRecommendations } from '@/services/audit/rules/engine';
@@ -214,7 +214,7 @@ export default function AuditPage() {
     // Reset step so next audit starts fresh
     setCurrentStep(0);
     setIsSubmitting(false);
-    router.push('/results/demo');
+    router.push('/results/live');
   };
 
   const totalMonthlySpend = selectedTools.reduce(
@@ -434,7 +434,7 @@ export default function AuditPage() {
                           </div>
                         </div>
                         <p className="text-sm font-bold text-slate-900">
-                          ${(config?.monthlySpend ?? 0).toFixed(2)}
+                          {formatCurrency(config?.monthlySpend ?? 0)}
                           <span className="ml-0.5 text-xs font-normal text-slate-400">/mo</span>
                         </p>
                       </div>

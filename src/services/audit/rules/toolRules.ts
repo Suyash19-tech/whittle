@@ -164,20 +164,62 @@ export const claudeTeamToPro: RuleFn = ({ tool, teamSize }) => {
     };
 };
 
-// ─── Windsurf ─────────────────────────────────────────────────────────────────
+// ─── Capability Mapping ────────────────────────────────────────────────────────
+const CAPABILITY_MAP: Record<string, string> = {
+    'chatgpt': 'chat-assistant',
+    'claude': 'chat-assistant',
+    'gemini': 'chat-assistant',
+    'cursor': 'coding-assistant',
+    'github-copilot': 'coding-assistant',
+    'windsurf': 'coding-assistant',
+    'openai-api': 'api-platform',
+    'anthropic-api': 'api-platform',
+    'perplexity': 'research',
+    'midjourney': 'creative',
+};
 
-/** Windsurf + Cursor overlap: high capability overlap, recommend consolidation. */
-export const windsurfOverlapWithCursor: RuleFn = ({ tool, allTools }) => {
-    if (tool.toolId !== 'windsurf') return null;
-    const hasCursor = allTools.some((t) => t.toolId === 'cursor');
-    if (!hasCursor) return null;
+function getCapability(toolId: string) {
+    return CAPABILITY_MAP[toolId] || 'other';
+}
+
+// ─── Capability Overlap ───────────────────────────────────────────────────────
+
+/** Chat Assistant Overlap: team size <= 5, 3+ chat assistants */
+export const chatAssistantOverlap: RuleFn = ({ tool, allTools, teamSize }) => {
+    if (getCapability(tool.toolId) !== 'chat-assistant') return null;
+    if (!['1-5'].includes(teamSize)) return null;
+
+    const chatAssistants = allTools.filter(t => getCapability(t.toolId) === 'chat-assistant');
+    if (chatAssistants.length < 3) return null;
+
+    // Keep the most expensive one as primary
+    const sorted = [...chatAssistants].sort((a, b) => b.monthlySpend - a.monthlySpend);
+    if (sorted[0].toolId === tool.toolId) return null;
 
     return {
         recommendedPlanName: 'Free',
         recommendedMonthlyCost: 0,
-        reasoning:
-            `Windsurf and Cursor are both AI-native code editors with substantially overlapping feature sets. ` +
-            `Running both simultaneously is likely redundant — consolidating to a single editor would eliminate this subscription without impacting development capability.`,
+        reasoning: `Your team currently provisions ${chatAssistants.length} distinct chat assistants. Standardising on a primary tool (like ${sorted[0].toolName}) and moving others to a free tier eliminates redundant license overlap without sacrificing capability.`,
+        confidence: 'high',
+        optimizationCategory: 'overlap',
+    };
+};
+
+/** Coding Assistant Overlap: 2+ coding assistants on small team */
+export const codingAssistantOverlap: RuleFn = ({ tool, allTools, teamSize }) => {
+    if (getCapability(tool.toolId) !== 'coding-assistant') return null;
+    if (!['1-5', '6-20'].includes(teamSize)) return null;
+
+    const codingAssistants = allTools.filter(t => getCapability(t.toolId) === 'coding-assistant');
+    if (codingAssistants.length < 2) return null;
+
+    const sorted = [...codingAssistants].sort((a, b) => b.monthlySpend - a.monthlySpend);
+    if (sorted[0].toolId === tool.toolId) return null;
+
+    return {
+        recommendedPlanName: 'Free',
+        recommendedMonthlyCost: 0,
+        reasoning: `You are running ${codingAssistants.length} distinct AI coding assistants. Consolidating to your primary editor (${sorted[0].toolName}) avoids context-switching and reduces duplicated software expenditure.`,
         confidence: 'medium',
         optimizationCategory: 'overlap',
     };
@@ -187,21 +229,29 @@ export const windsurfOverlapWithCursor: RuleFn = ({ tool, allTools }) => {
 
 /**
  * Enterprise → Team: confidence scales with seat count.
- * Writing/content workflows: lower confidence (Enterprise may be justified for compliance).
- * Coding workflows: higher confidence (Enterprise rarely needed at small scale).
+ * Strengthened rule: high confidence if team <= 20, very explicit reasoning.
  */
 export const enterpriseOverkill: RuleFn = ({ tool, teamSize, useCase }) => {
     if (tool.planId !== 'enterprise') return null;
-    if (['21-50', '51-100', '100+'].includes(teamSize)) return null;
+    if (['51-100', '100+'].includes(teamSize)) return null;
 
-    // Check if the tool has a 'team' plan in the catalog
-    const teamCost = computeMonthlySpend(tool.toolId, 'team', tool.seats);
-    if (teamCost === null) return null; // No team plan available
+    // Find the next logical downgrade plan (Team, Teams, or Business)
+    const possiblePlans = ['team', 'teams', 'business'];
+    let fallbackPlanId: string | null = null;
+    let teamCost: number | null = null;
+    
+    for (const pid of possiblePlans) {
+        teamCost = computeMonthlySpend(tool.toolId, pid, tool.seats);
+        if (teamCost !== null) {
+            fallbackPlanId = pid;
+            break;
+        }
+    }
 
-    // Confidence: 1-5 seats → high, 6-20 → medium
-    // Writing/research workflows → one step lower confidence
-    let confidence: 'high' | 'medium' | 'low' =
-        teamSize === '1-5' ? 'high' : 'medium';
+    if (teamCost === null || fallbackPlanId === null) return null;
+
+    // Confidence: 1-5 and 6-20 seats -> high. 21-50 -> medium.
+    let confidence: 'high' | 'medium' | 'low' = ['1-5', '6-20'].includes(teamSize) ? 'high' : 'medium';
 
     if (['writing', 'research'].includes(useCase)) {
         confidence = confidence === 'high' ? 'medium' : 'low';
@@ -211,34 +261,61 @@ export const enterpriseOverkill: RuleFn = ({ tool, teamSize, useCase }) => {
         ? ' For content-focused workflows, verify whether compliance or SSO features are actively required before downgrading.'
         : '';
 
+    const fallbackName = fallbackPlanId.charAt(0).toUpperCase() + fallbackPlanId.slice(1);
+
     return {
-        recommendedPlanName: 'Team',
+        recommendedPlanName: fallbackName,
         recommendedMonthlyCost: teamCost,
         reasoning:
-            `Enterprise plans bundle SLA guarantees, dedicated support, and compliance tooling that typically become necessary at 100+ seats or in regulated industries. ` +
-            `A Team plan would cover your current requirements at a significantly lower cost.${workflowNote}`,
+            `Enterprise plans bundle SLA guarantees, dedicated support, and compliance tooling that are typically unnecessary for a ${teamSize.split('-')[1] ?? teamSize}-person team. ` +
+            `A ${fallbackName} plan securely covers your core requirements at a more proportionate cost.${workflowNote}`,
         confidence,
         optimizationCategory: 'enterprise-flag',
+    };
+};
+
+// ─── Seat count rightsizing ──────────────────────────────────────────────────
+const TEAM_SIZE_MAP: Record<string, number> = {
+    '1-5': 5,
+    '6-20': 20,
+    '21-50': 50,
+    '51-100': 100,
+    '100+': 1000,
+};
+
+/** If seats > estimated max team size → trigger low-confidence rightsizing review */
+export const seatCountOverEstimatedMax: RuleFn = ({ tool, teamSize }) => {
+    const maxSeats = TEAM_SIZE_MAP[teamSize] || 1000;
+    if (tool.seats <= maxSeats) return null;
+
+    // Estimate unit cost per seat to calculate potential savings
+    const unitCost = tool.monthlySpend / tool.seats;
+    const optimizedCost = unitCost * maxSeats;
+
+    return {
+        recommendedPlanName: tool.planName,
+        recommendedMonthlyCost: optimizedCost,
+        reasoning: 
+            `You have ${tool.seats} seats provisioned for ${tool.toolName}, which exceeds your reported team size cap of ${maxSeats}. ` +
+            `Standardising seat counts to match your actual headcount can prevent "zombie" license spend.`,
+        confidence: 'low',
+        optimizationCategory: 'seat-reduction',
     };
 };
 
 // ─── Rule registry ────────────────────────────────────────────────────────────
 
 export const TOOL_RULES = [
-    // ChatGPT — most specific first
     chatgptTeamToPlusSmallSeats,
     chatgptTeamToPlusCoding,
     chatgptTeamToPlusWriting,
-    // Cursor
     cursorBusinessToPro,
-    // GitHub Copilot
     copilotBusinessToIndividual,
     copilotBusinessToIndividualMedium,
-    // Claude
     claudeProToFreeSecondary,
     claudeTeamToPro,
-    // Windsurf
-    windsurfOverlapWithCursor,
-    // Enterprise (generic, last — catches any tool)
+    chatAssistantOverlap,
+    codingAssistantOverlap,
     enterpriseOverkill,
+    seatCountOverEstimatedMax,
 ];

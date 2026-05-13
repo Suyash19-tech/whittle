@@ -66,20 +66,33 @@ export function calculateSpend({ toolInputs, recommendations }: SpendInput): Spe
         };
     }
 
-    // Build a lookup map for fast recommendation access
-    const recByToolId = new Map(recommendations.map((r) => [r.toolId, r]));
-
     const currentMonthlySpend = dollars(
         toolInputs.reduce((sum, t) => sum + t.monthlySpend, 0)
     );
 
-    const optimizedMonthlySpend = dollars(
-        toolInputs.reduce((sum, t) => {
-            const rec = recByToolId.get(t.toolId);
-            // If a recommendation exists, use its projected cost; otherwise no change
-            return sum + (rec ? rec.recommendedMonthlyCost : t.monthlySpend);
-        }, 0)
-    );
+    // Sum up recommended costs from all unique recommendations
+    // (This automatically handles grouped recommendations correctly)
+    let totalOptimizedCost = 0;
+    const toolIdsWithRecs = new Set<string>();
+    
+    for (const rec of recommendations) {
+        totalOptimizedCost += rec.recommendedMonthlyCost;
+        // Mark these tools as having recommendations
+        rec.toolId.split(',').forEach(id => toolIdsWithRecs.add(id));
+    }
+
+    // Add original cost for tools that had NO recommendation (KEEP verdicts)
+    // Wait, KEEP verdicts ARE in the recommendations list now (optimizationCategory: 'keep')
+    // but they have recommendedMonthlyCost = currentMonthlySpend, so the loop above
+    // covers them perfectly. 
+    // Just in case any tools were missed by the engine entirely:
+    for (const tool of toolInputs) {
+        if (!toolIdsWithRecs.has(tool.toolId)) {
+            totalOptimizedCost += tool.monthlySpend;
+        }
+    }
+
+    const optimizedMonthlySpend = dollars(totalOptimizedCost);
 
     const monthlySavings = dollars(currentMonthlySpend - optimizedMonthlySpend);
     const annualSavings = dollars(monthlySavings * 12);

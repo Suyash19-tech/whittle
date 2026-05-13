@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import type { AuditSummary } from '@/types/audit';
+import { formatCurrency } from '@/lib/utils';
 
 interface SavingsHeroProps {
     summary: AuditSummary;
@@ -19,8 +20,8 @@ export function SavingsHero({ summary }: SavingsHeroProps) {
         : 100;
 
     const tiles = [
-        { label: 'Current spend', value: `$${summary.currentMonthlySpend}`, sub: 'per month', cls: 'text-slate-900' },
-        { label: 'Optimized spend', value: `$${summary.optimizedMonthlySpend}`, sub: 'per month', cls: 'text-teal-700' },
+        { label: 'Current spend', value: formatCurrency(summary.currentMonthlySpend), sub: 'per month', cls: 'text-slate-900' },
+        { label: 'Optimized spend', value: formatCurrency(summary.optimizedMonthlySpend), sub: 'per month', cls: 'text-teal-700' },
         { label: 'Reduction', value: `${summary.savingsPercentage}%`, sub: 'cost decrease', cls: 'text-sky-700' },
     ];
 
@@ -37,12 +38,12 @@ export function SavingsHero({ summary }: SavingsHeroProps) {
                     </p>
                     <div className="flex items-baseline justify-center gap-2">
                         <span className="text-6xl font-bold tracking-tight text-slate-900 sm:text-7xl">
-                            ${summary.monthlySavings}
+                            {formatCurrency(summary.monthlySavings).replace('$', '')}
                         </span>
                         <span className="text-lg font-medium text-slate-400">/mo</span>
                     </div>
                     <p className="mt-2 text-sm font-medium text-teal-600">
-                        ${summary.annualSavings.toLocaleString()} saved per year
+                        {formatCurrency(summary.annualSavings)} saved per year
                     </p>
                 </div>
 
@@ -65,7 +66,7 @@ export function SavingsHero({ summary }: SavingsHeroProps) {
                             <div className="h-2.5 w-full rounded-full bg-slate-300" />
                         </div>
                         <span className="w-14 text-xs font-semibold text-slate-700">
-                            ${summary.currentMonthlySpend}
+                            {formatCurrency(summary.currentMonthlySpend)}
                         </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -83,7 +84,7 @@ export function SavingsHero({ summary }: SavingsHeroProps) {
                             />
                         </div>
                         <span className="w-14 text-xs font-semibold text-teal-700">
-                            ${summary.optimizedMonthlySpend}
+                            {formatCurrency(summary.optimizedMonthlySpend)}
                         </span>
                     </div>
                 </div>
