@@ -28,12 +28,12 @@ https://whittle-liart.vercel.app
 ![Choose Ai plans review](./public/Final_Review.png)
 
 ## Optimization Report
-![Optimization Report](./public/AI_Summary_Report.png)
+![Optimization Report](./public/AI_Audit_Results.png)
 
 ## Recommendation Engine
 ![Recommendations](./public/Score_Recommendations.png)
 
-![tool Recommendations](./public/Score_Recommendations.png)
+![tool Recommendations](./public/AI_Summary_Report.png)
 
 ---
 
