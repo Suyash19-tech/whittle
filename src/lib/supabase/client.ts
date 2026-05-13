@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
  * For server-side operations (API routes) use the service role key instead.
  * This client is intentionally lightweight — no auth, no realtime subscriptions.
  */
-export const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

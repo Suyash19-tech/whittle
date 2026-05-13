@@ -31,7 +31,8 @@ jobs:
       - name: Run build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || 're_placeholder' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'placeholder-gemini' }}
+          NEXT_PUBLIC_SITE_URL: https://whittle-test.vercel.app
