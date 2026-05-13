@@ -99,8 +99,27 @@ export const PRICING_CATALOG: Record<ToolId, PlanDefinition[]> = {
     gemini: [
         { id: 'free', name: 'Free', pricePerSeat: 0 },
         { id: 'ai-pro', name: 'AI Pro', pricePerSeat: 19.99 },
-        { id: 'ai-ultra', name: 'AI Ultra', pricePerSeat: 249.99 },
+        { id: 'ai-ultra', name: 'AI Ultra', pricePerSeat: 99.99 },
         { id: 'api', name: 'API (direct)', pricePerSeat: 0, isVariablePricing: true },
+    ],
+
+    // ── Perplexity ───────────────────────────────────────────────────────────────
+    // Free, Pro $20/mo, Enterprise Pro (Custom)
+    // Source: perplexity.ai/pro (May 2026)
+    perplexity: [
+        { id: 'free', name: 'Free', pricePerSeat: 0 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 20 },
+        { id: 'enterprise', name: 'Enterprise Pro', pricePerSeat: null },
+    ],
+
+    // ── Midjourney ───────────────────────────────────────────────────────────────
+    // Basic $10, Standard $30, Pro $60, Mega $120
+    // Source: midjourney.com/account/plans (May 2026)
+    midjourney: [
+        { id: 'basic', name: 'Basic', pricePerSeat: 10 },
+        { id: 'standard', name: 'Standard', pricePerSeat: 30 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 60 },
+        { id: 'mega', name: 'Mega', pricePerSeat: 120 },
     ],
 
     // ── Windsurf (Codeium) ───────────────────────────────────────────────────────
@@ -108,9 +127,9 @@ export const PRICING_CATALOG: Record<ToolId, PlanDefinition[]> = {
     // Source: codeium.com/pricing (May 2026)
     windsurf: [
         { id: 'free', name: 'Free', pricePerSeat: 0 },
-        { id: 'pro', name: 'Pro', pricePerSeat: 20 },
-        { id: 'teams', name: 'Teams', pricePerSeat: 40 },
-        { id: 'enterprise', name: 'Enterprise', pricePerSeat: 60 },
+        { id: 'pro', name: 'Pro', pricePerSeat: 15 },
+        { id: 'teams', name: 'Teams', pricePerSeat: 30 },
+        { id: 'enterprise', name: 'Enterprise', pricePerSeat: null },
     ],
 };
 

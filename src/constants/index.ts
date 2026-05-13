@@ -27,6 +27,8 @@ export const SUPPORTED_AI_TOOLS = [
     { id: 'openai-api', name: 'OpenAI API', provider: 'OpenAI', category: 'api' as const, plans: plansFor('openai-api') },
     { id: 'anthropic-api', name: 'Anthropic API', provider: 'Anthropic', category: 'api' as const, plans: plansFor('anthropic-api') },
     { id: 'windsurf', name: 'Windsurf', provider: 'Codeium', category: 'code' as const, plans: plansFor('windsurf') },
+    { id: 'perplexity', name: 'Perplexity', provider: 'Perplexity', category: 'llm' as const, plans: plansFor('perplexity') },
+    { id: 'midjourney', name: 'Midjourney', provider: 'Midjourney', category: 'other' as const, plans: plansFor('midjourney') },
 ];
 
 // Use Cases
