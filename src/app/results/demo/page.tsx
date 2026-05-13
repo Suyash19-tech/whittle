@@ -76,7 +76,7 @@ export default function ResultsDemoPage() {
     }, [storeResults, isSaving]);
 
     return (
-        <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <main id="main-content" className="min-h-screen">
             <div className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">
                 <Container>
                     <div className="flex h-14 items-center justify-between">

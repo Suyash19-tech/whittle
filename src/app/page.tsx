@@ -11,10 +11,10 @@ import { Footer } from '@/components/shared/footer';
 export default function Home() {
     return (
         <>
-        <main id="main-content" className="min-h-screen bg-white">
+        <main id="main-content" className="min-h-screen">
 
             {/* ─── Hero ─────────────────────────────────────────────── */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white pb-0 pt-24 sm:pt-32">
+            <section className="relative overflow-hidden pb-0 pt-24 sm:pt-32">
                 {/* Subtle background grid */}
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.03]"
