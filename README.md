@@ -1,205 +1,121 @@
-# Whittle - AI Spend Optimization Platform
+# Whittle — AI Spend Optimization Platform
 
-A production-quality SaaS MVP for startup founders and engineering teams to audit and optimize their AI tool spending.
+A production SaaS application for startup founders and engineering teams to audit, optimise, and reduce their AI tool spending. Built with Next.js 15, TypeScript, Tailwind CSS, and Supabase.
 
-## 🎯 Product Vision
+**Live:** [whittle.vercel.app](https://whittle.vercel.app)
 
-Whittle helps teams understand and reduce unnecessary spending on AI subscriptions and API tooling. In under 60 seconds, users can audit their AI stack and receive actionable recommendations to save thousands monthly.
+---
 
-## 🏗️ Architecture Overview
+## Features
 
-### Folder Structure
+| Feature | Status | Route |
+|---------|--------|-------|
+| Landing page with hero + social proof | ✅ Shipped | `/` |
+| Multi-step AI audit form (4 steps) | ✅ Shipped | `/audit` |
+| Dynamic pricing engine (2026 catalog) | ✅ Shipped | — |
+| Rules-based recommendation engine | ✅ Shipped | — |
+| AI-generated narrative summary (OpenRouter) | ✅ Shipped | — |
+| Results dashboard with savings visualisation | ✅ Shipped | `/results/demo`, `/results/live` |
+| Shareable public report URLs | ✅ Shipped | `/share/[id]` |
+| Open Graph + Twitter Card previews | ✅ Shipped | `/share/[id]` |
+| Lead capture form (Supabase) | ✅ Shipped | Results pages |
+| Credex consultation booking (Supabase) | ✅ Shipped | Results pages (≥$100/mo savings) |
+| Responsive design (mobile-first) | ✅ Shipped | All pages |
+
+## Tech Stack
+
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript (strict)
+- **Styling:** Tailwind CSS 3.4
+- **Animations:** Framer Motion
+- **Icons:** Lucide React
+- **State:** Zustand (persisted to localStorage)
+- **Forms:** React Hook Form + Zod validation
+- **Database:** Supabase (PostgreSQL)
+- **AI:** OpenRouter API (server-side)
+- **Deployment:** Vercel
+
+## Project Structure
 
 ```
 whittle/
 ├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── layout.tsx          # Root layout with metadata
-│   │   ├── page.tsx            # Landing page
-│   │   └── audit/              # Audit feature routes
-│   │       ├── page.tsx        # Audit form
-│   │       ├── results/[id]/   # Audit results
-│   │       └── share/[id]/     # Shareable results
+│   ├── app/                          # Next.js App Router
+│   │   ├── layout.tsx                # Root layout + metadata
+│   │   ├── page.tsx                  # Landing page
+│   │   ├── audit/page.tsx            # Multi-step audit form
+│   │   ├── results/
+│   │   │   ├── demo/page.tsx         # Demo/real results
+│   │   │   └── live/page.tsx         # Live results (from store)
+│   │   ├── share/[id]/
+│   │   │   ├── page.tsx              # Server component + OG metadata
+│   │   │   └── SharePageClient.tsx   # Client component for shared reports
+│   │   └── api/audit/summarise/      # AI summary API route
 │   │
-│   ├── components/             # React components
-│   │   ├── ui/                 # Reusable UI components
-│   │   │   ├── glass-card.tsx  # Glassmorphism card
-│   │   │   └── gradient-button.tsx
-│   │   └── shared/             # Shared layout components
-│   │       ├── navbar.tsx
-│   │       ├── footer.tsx
-│   │       ├── container.tsx
-│   │       └── section-wrapper.tsx
+│   ├── components/
+│   │   ├── audit/                    # Audit form components
+│   │   ├── results/                  # Results dashboard components
+│   │   │   ├── SavingsHero.tsx
+│   │   │   ├── AuditScoreCard.tsx
+│   │   │   ├── RecommendationCard.tsx
+│   │   │   ├── OpportunityInsightChip.tsx
+│   │   │   ├── AISummaryCard.tsx
+│   │   │   ├── LeadCapture.tsx
+│   │   │   └── ConsultationCTA.tsx
+│   │   ├── shared/                   # Layout components
+│   │   └── ui/                       # Reusable UI primitives
 │   │
-│   ├── lib/                    # Utility functions
-│   │   └── utils.ts            # cn(), formatCurrency(), etc.
+│   ├── services/
+│   │   ├── audit/                    # Pricing catalog, rules engine, calculators
+│   │   └── ai/                       # OpenRouter integration
 │   │
-│   ├── hooks/                  # Custom React hooks
-│   │   ├── useAudit.ts         # Audit operations
-│   │   └── useForm.ts          # Form state management
+│   ├── lib/supabase/                 # Supabase client + data access
+│   │   ├── client.ts
+│   │   ├── reports.ts
+│   │   ├── leads.ts
+│   │   └── consultations.ts
 │   │
-│   ├── store/                  # Zustand state management
-│   │   ├── audit.store.ts      # Audit form & results state
-│   │   └── ui.store.ts         # UI state (modals, theme)
-│   │
-│   ├── services/               # API & business logic
-│   │   ├── api.ts              # HTTP client
-│   │   └── audit.service.ts    # Audit API calls
-│   │
-│   ├── types/                  # TypeScript type definitions
-│   │   └── index.ts            # Core types
-│   │
-│   ├── constants/              # Application constants
-│   │   └── index.ts            # Tools, pricing, use cases
-│   │
-│   ├── styles/                 # Global styles
-│   │   └── globals.css         # Tailwind + custom utilities
-│   │
-│   └── test/                   # Test setup
-│       └── setup.ts            # Vitest configuration
+│   ├── store/audit.store.ts          # Zustand state management
+│   ├── types/audit.ts                # TypeScript domain types
+│   ├── constants/                    # Tool catalog, mock data
+│   └── styles/globals.css            # Tailwind + custom utilities
 │
-├── public/                     # Static assets
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-├── next.config.js
-├── vitest.config.ts
-└── README.md
+├── public/
+│   ├── og/whittle-default.png        # OG share image (1200×630)
+│   ├── favicon.png                   # Favicon
+│   ├── robots.txt
+│   └── sitemap.xml
+│
+└── Configuration files
 ```
 
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Emerald (trust, growth, financial health)
-- **Neutral**: Slate (professional, clean)
-- **Accent**: Amber (warnings), Red (high impact)
-
-### Components
-- **GlassCard**: Glassmorphism effect with soft gradients
-- **GradientButton**: Premium gradient buttons with smooth transitions
-- **Container**: Responsive max-width wrapper
-- **SectionWrapper**: Consistent vertical spacing
-
-### Typography
-- **Font**: Inter (professional SaaS standard)
-- **Hierarchy**: Proper scaling from h1-h4
-- **Spacing**: Premium whitespace system
-
-## 🚀 Tech Stack
-
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first styling
-- **Framer Motion** - Smooth animations
-- **Lucide Icons** - Beautiful icon library
-
-### State Management
-- **Zustand** - Lightweight, performant state management
-- **Persist Middleware** - localStorage persistence
-
-### Forms & Validation
-- **React Hook Form** - Efficient form handling
-- **Zod** - TypeScript-first schema validation
-
-### Backend Integration
-- **Supabase** - Database, auth, storage
-- **Axios** - HTTP client with interceptors
-- **OpenRouter API** - AI summaries
-
-### Testing
-- **Vitest** - Fast unit testing
-- **React Testing Library** - Component testing
-
-### Development
-- **ESLint** - Code quality
-- **Prettier** - Code formatting
-- **TypeScript** - Type checking
-
-## 📋 Key Features (Planned)
-
-### Phase 1 (MVP)
-- ✅ Landing page with hero section
-- ⏳ Audit form with tool selection
-- ⏳ Results dashboard with recommendations
-- ⏳ Share functionality
-- ⏳ Export to PDF/CSV
-
-### Phase 2
-- Team collaboration
-- Advanced analytics
-- Custom integrations
-- API access
-
-### Phase 3
-- Automated spend monitoring
-- Predictive analytics
-- Vendor management
-- Budget alerts
-
-## 🔧 Setup Instructions
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
+- npm
+- Supabase project (for persistence)
 
 ### Installation
 
 ```bash
-# Install dependencies
 npm install
-
-# Create environment file
 cp .env.example .env.local
-
-# Add your environment variables
-# NEXT_PUBLIC_SUPABASE_URL=...
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-# OPENROUTER_API_KEY=...
+# Fill in your Supabase and OpenRouter credentials
 ```
 
 ### Development
 
 ```bash
-# Start development server
-npm run dev
-
-# Open http://localhost:3000
+npm run dev          # Start dev server on http://localhost:3000
+npm run build        # Production build
+npm run type-check   # TypeScript checking
+npm run lint         # ESLint
+npm run format       # Prettier
+npm run test         # Vitest
 ```
 
-### Build & Deploy
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run type checking
-npm run type-check
-
-# Run linting
-npm run lint
-
-# Format code
-npm run format
-```
-
-### Testing
-
-```bash
-# Run tests
-npm run test
-
-# Run tests with UI
-npm run test:ui
-
-# Run tests in watch mode
-npm run test -- --watch
-```
-
-## 🌍 Environment Variables
+## Environment Variables
 
 ```env
 # Supabase
@@ -207,123 +123,39 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# OpenRouter (AI Summaries)
+# AI Summaries
 OPENROUTER_API_KEY=your_openrouter_key
+GEMINI_API_KEY=your_gemini_key
 
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://whittle.vercel.app
 NODE_ENV=development
 ```
 
-## 🏛️ Architectural Decisions
+## Supabase Tables
 
-### 1. **App Router (Next.js 15)**
-- Modern, file-based routing
-- Server components by default
-- Better performance and DX
+### `reports`
+Stores full audit results as JSONB for shareable URLs.
 
-### 2. **Zustand for State Management**
-- Lightweight alternative to Redux
-- Minimal boilerplate
-- Built-in devtools and persistence
-- Perfect for SaaS applications
+### `audit_leads`
+Captures lead information from results pages.
 
-### 3. **Tailwind CSS**
-- Utility-first approach
-- Consistent design system
-- Excellent performance
-- Easy customization
+### `consultation_requests`
+Stores consultation booking requests (shown when savings ≥ $100/mo).
 
-### 4. **Glassmorphism Design**
-- Modern, premium aesthetic
-- Aligns with fintech inspiration (Stripe, Mercury)
-- Subtle shadows and gradients
-- Professional appearance
+## Architecture Decisions
 
-### 5. **Centralized API Service**
-- Single source of truth for HTTP requests
-- Interceptors for auth and error handling
-- Easy to test and maintain
-- Consistent error handling
+- **App Router** — Server components for metadata/OG, client components for interactive UI
+- **Zustand** — Lightweight state with localStorage persistence for audit flow continuity
+- **Rules engine** — Deterministic recommendation logic (no AI dependency for core savings calculations)
+- **Graceful degradation** — All Supabase/AI calls fail silently with fallbacks; no feature breaks on network errors
+- **Single JSONB blob** — Reports stored as complete snapshots for zero-migration sharing
 
-### 6. **Type-Safe Throughout**
-- TypeScript for all code
-- Zod for runtime validation
-- Prevents runtime errors
-- Better IDE support
-
-## 📦 Dependencies Installed
-
-### Core
-- `next@15.0.0` - React framework
-- `react@19.0.0` - UI library
-- `typescript@5.3.0` - Type safety
-
-### Styling
-- `tailwindcss@3.4.0` - Utility CSS
-- `class-variance-authority@0.7.0` - Component variants
-- `clsx@2.0.0` - Class merging
-- `tailwind-merge@2.2.0` - Tailwind class merging
-
-### Animation & Icons
-- `framer-motion@10.16.0` - Smooth animations
-- `lucide-react@0.292.0` - Icon library
-
-### State & Forms
-- `zustand@4.4.0` - State management
-- `react-hook-form@7.48.0` - Form handling
-- `zod@3.22.0` - Schema validation
-- `@hookform/resolvers@3.3.0` - Form validation
-
-### Backend Integration
-- `@supabase/supabase-js@2.38.0` - Database & auth
-- `axios@1.6.0` - HTTP client
-
-### Development
-- `eslint@8.54.0` - Linting
-- `prettier@3.1.0` - Code formatting
-- `vitest@1.0.0` - Testing framework
-- `@testing-library/react@14.1.0` - Component testing
-
-## 🎯 Next Steps
-
-1. **Backend Setup**
-   - Configure Supabase database schema
-   - Set up authentication
-   - Create API routes
-
-2. **Audit Form Implementation**
-   - Build tool selection interface
-   - Implement form validation
-   - Add tool management
-
-3. **Results Dashboard**
-   - Design results layout
-   - Implement recommendation engine
-   - Add visualization charts
-
-4. **Sharing & Export**
-   - Implement share functionality
-   - Add PDF/CSV export
-   - Create public share pages
-
-5. **Testing**
-   - Write unit tests
-   - Add integration tests
-   - Set up E2E testing
-
-## 📝 Notes
-
-- This is a **frontend-only foundation** - backend business logic is not implemented
-- All components are production-ready and follow SaaS best practices
-- The design system is extensible and can be easily customized
-- Code includes architectural comments explaining key decisions
-- Accessibility best practices are implemented throughout
-
-## 📄 License
+## License
 
 MIT
 
 ---
 
-**Built with ❤️ for startup founders who care about financial intelligence.**
+**Built for startup founders who treat AI spend as a real line item.**

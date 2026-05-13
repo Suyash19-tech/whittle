@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { Container } from '@/components/shared/container';
 import { LogoMarquee } from '@/components/shared/logo-marquee';
+import { Footer } from '@/components/shared/footer';
 
 export default function Home() {
     return (
-        <main className="min-h-screen bg-white">
+        <>
+        <main id="main-content" className="min-h-screen bg-white">
 
             {/* ─── Hero ─────────────────────────────────────────────── */}
             <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white pb-0 pt-24 sm:pt-32">
@@ -56,9 +58,9 @@ export default function Home() {
                                     <ArrowRight className="h-4 w-4" />
                                 </GradientButton>
                             </Link>
-                            <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50">
+                            <Link href="/results/demo" className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50">
                                 See how it works
-                            </button>
+                            </Link>
                         </div>
 
                         {/* Social proof */}
@@ -214,7 +216,7 @@ export default function Home() {
                             },
                         ].map(({ Icon, title, body }, i) => (
                             <motion.div
-                                key={i}
+                                key={title}
                                 initial={{ opacity: 0, y: 16 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -264,5 +266,7 @@ export default function Home() {
             </section>
 
         </main>
+        <Footer />
+        </>
     );
 }
