@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Loader2, CheckCircle2, Calendar } from 'lucide-react';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { saveConsultationToSupabase } from '@/lib/supabase/consultations';
+import { triggerConfirmationEmail } from '@/services/email/client';
 
 // ─── Threshold ────────────────────────────────────────────────────────────────
 const SAVINGS_THRESHOLD = 100;
@@ -63,6 +64,13 @@ export function ConsultationCTA({
 
     if (success) {
       setIsSuccess(true);
+      // Non-blocking email trigger
+      triggerConfirmationEmail({
+        type: 'consultation',
+        email: data.email,
+        name: data.name,
+        savings: estimatedSavings,
+      });
     } else {
       setSubmitError('Something went wrong. Please try again.');
     }

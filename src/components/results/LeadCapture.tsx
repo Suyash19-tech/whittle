@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Loader2, CheckCircle2, Mail } from 'lucide-react';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { saveLeadToSupabase } from '@/lib/supabase/leads';
+import { triggerConfirmationEmail } from '@/services/email/client';
 
 const leadSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -54,6 +55,13 @@ export function LeadCapture({ reportId, teamSize, estimatedSavings }: LeadCaptur
 
     if (success) {
       setIsSuccess(true);
+      // Non-blocking email trigger
+      triggerConfirmationEmail({
+        type: 'lead',
+        email: data.email,
+        name: data.name,
+        savings: estimatedSavings,
+      });
     } else {
       setSubmitError('Something went wrong. Please try again.');
     }
