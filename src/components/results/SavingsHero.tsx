@@ -14,7 +14,9 @@ interface SavingsHeroProps {
  * Receives typed AuditSummary — no hardcoded values.
  */
 export function SavingsHero({ summary }: SavingsHeroProps) {
-    const optimizedPct = (summary.optimizedMonthlySpend / summary.currentMonthlySpend) * 100;
+    const optimizedPct = summary.currentMonthlySpend > 0 
+        ? (summary.optimizedMonthlySpend / summary.currentMonthlySpend) * 100 
+        : 100;
 
     const tiles = [
         { label: 'Current spend', value: `$${summary.currentMonthlySpend}`, sub: 'per month', cls: 'text-slate-900' },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAISummary } from '@/services/ai/openrouter';
 import type { SummaryInput } from '@/services/ai/openrouter';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/audit/summarise
@@ -16,6 +17,11 @@ import type { SummaryInput } from '@/services/ai/openrouter';
  */
 export async function POST(req: NextRequest) {
     try {
+        const ip = req.ip ?? req.headers.get('x-forwarded-for') ?? 'anonymous';
+        if (!checkRateLimit(ip, 5, 60000)) { // 5 requests per minute
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
         const body = await req.json() as SummaryInput;
 
         // Basic shape validation — reject obviously malformed requests

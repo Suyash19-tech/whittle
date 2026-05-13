@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resend, DEFAULT_FROM_EMAIL } from '@/lib/email/client';
 import { getLeadEmailHtml, getConsultationEmailHtml } from '@/lib/email/templates';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/email
@@ -10,6 +11,11 @@ import { getLeadEmailHtml, getConsultationEmailHtml } from '@/lib/email/template
  */
 export async function POST(req: NextRequest) {
     try {
+        const ip = req.ip ?? req.headers.get('x-forwarded-for') ?? 'anonymous';
+        if (!checkRateLimit(ip, 3, 60000)) { // 3 emails per minute max
+            return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+        }
+
         const body = await req.json();
         const { type, email, name, savings } = body;
 
