@@ -17,6 +17,7 @@ const consultationSchema = z.object({
   email: z.string().email('Valid email is required'),
   preferredTime: z.string().min(2, 'Preferred time is required'),
   challenge: z.string().min(5, 'Please describe your challenge'),
+  website: z.string().optional(),
 });
 
 type ConsultationFormData = z.infer<typeof consultationSchema>;
@@ -50,6 +51,15 @@ export function ConsultationCTA({
   const onSubmit = async (data: ConsultationFormData) => {
     setIsSubmitting(true);
     setSubmitError(null);
+
+    // Honeypot check
+    if (data.website?.trim()) {
+      // Silently fail for bots
+      console.log('Spam detected via honeypot');
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      return;
+    }
 
     const success = await saveConsultationToSupabase({
       name: data.name,
@@ -114,6 +124,15 @@ export function ConsultationCTA({
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+          {/* Honeypot field - hidden from users, visible to bots */}
+          <input
+            {...register('website')}
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            className="hidden"
+            aria-hidden="true"
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label

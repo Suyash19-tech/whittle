@@ -14,6 +14,7 @@ const leadSchema = z.object({
   email: z.string().email('Valid email is required'),
   company: z.string().optional(),
   role: z.string().optional(),
+  website: z.string().optional(),
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -40,6 +41,15 @@ export function LeadCapture({ reportId, teamSize, estimatedSavings }: LeadCaptur
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     setSubmitError(null);
+    
+    // Honeypot check
+    if (data.website?.trim()) {
+      // Silently fail for bots
+      console.log('Spam detected via honeypot');
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      return;
+    }
 
     const success = await saveLeadToSupabase({
       name: data.name,
@@ -92,6 +102,15 @@ export function LeadCapture({ reportId, teamSize, estimatedSavings }: LeadCaptur
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left">
+        {/* Honeypot field - hidden from users, visible to bots */}
+        <input
+          {...register('website')}
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          className="hidden"
+          aria-hidden="true"
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">

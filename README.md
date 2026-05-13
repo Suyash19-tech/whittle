@@ -149,6 +149,7 @@ Stores consultation booking requests (shown when savings ≥ $100/mo).
 - **App Router** — Server components for metadata/OG, client components for interactive UI
 - **Zustand** — Lightweight state with localStorage persistence for audit flow continuity
 - **Rules engine** — Deterministic recommendation logic (no AI dependency for core savings calculations)
+- **Abuse Protection** — Uses a lightweight "honeypot" field (`website`) on lead and consultation forms to block automated bot submissions without adding friction (CAPTCHA) to the user experience.
 - **Graceful degradation** — All Supabase/AI calls fail silently with fallbacks; no feature breaks on network errors
 - **Single JSONB blob** — Reports stored as complete snapshots for zero-migration sharing
 
